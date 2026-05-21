@@ -1,98 +1,178 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { Redirect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { UsageBar } from '@/components/usage-bar';
+import { useTheme } from '@/hooks/use-theme';
+import { ApiError, fetchUsage, type UsageResponse } from '@/lib/api';
+import { formatCurrency, formatTokens, relativeReset, relativeUpdated } from '@/lib/format';
+import { usePairing } from '@/lib/pairing';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
+const REFRESH_MS = 30_000;
+
+export default function Dashboard() {
+  const theme = useTheme();
+  const { pairing, isLoading: pairingLoading, clear } = usePairing();
+
+  const [data, setData] = useState<UsageResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(
+    async (mode: 'initial' | 'refresh' = 'initial') => {
+      if (!pairing) return;
+      if (mode === 'refresh') setRefreshing(true);
+      else setLoading(true);
+      try {
+        const res = await fetchUsage(pairing);
+        setData(res);
+        setError(null);
+      } catch (e) {
+        setError(e instanceof ApiError ? e.message : 'Something went wrong.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [pairing],
+  );
+
+  useEffect(() => {
+    if (!pairing) return;
+    load('initial');
+    const id = setInterval(() => load('refresh'), REFRESH_MS);
+    return () => clearInterval(id);
+  }, [pairing, load]);
+
+  if (pairingLoading) {
     return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+      <View style={[styles.center, { backgroundColor: theme.background }]}>
+        <ActivityIndicator />
+      </View>
     );
   }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  if (!pairing) return <Redirect href="/pair" />;
+
+  const usage = data?.usage ?? null;
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load('refresh')} tintColor={theme.textSecondary} />
+        }>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={[styles.title, { color: theme.text }]}>Claude Usage</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+              {data?.profileName ?? `${pairing.host}:${pairing.port}`}
+            </Text>
+          </View>
+          <Pressable onPress={clear} hitSlop={10}>
+            <Text style={[styles.unpair, { color: theme.textSecondary }]}>Unpair</Text>
+          </Pressable>
+        </View>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+        {loading && !data && (
+          <View style={styles.centerPad}>
+            <ActivityIndicator />
+          </View>
+        )}
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        {error && (
+          <View style={[styles.banner, { backgroundColor: theme.backgroundElement }]}>
+            <Text style={[styles.bannerText, { color: theme.text }]}>{error}</Text>
+            <Pressable onPress={() => load('initial')}>
+              <Text style={[styles.retry, { color: '#0A84FF' }]}>Try again</Text>
+            </Pressable>
+          </View>
+        )}
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        {data && !data.hasData && !error && (
+          <View style={[styles.banner, { backgroundColor: theme.backgroundElement }]}>
+            <Text style={[styles.bannerText, { color: theme.text }]}>
+              Connected, but your Mac hasn&apos;t fetched usage yet. Open the menu bar app to refresh.
+            </Text>
+          </View>
+        )}
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        {usage && (
+          <View>
+            <UsageBar
+              label="Session (5h)"
+              percent={usage.sessionPercentage}
+              detail={`${formatTokens(usage.sessionTokensUsed)} / ${formatTokens(usage.sessionLimit)}`}
+              subDetail={relativeReset(usage.sessionResetTime)}
+            />
+            <UsageBar
+              label="Weekly (all models)"
+              percent={usage.weeklyPercentage}
+              detail={`${formatTokens(usage.weeklyTokensUsed)} / ${formatTokens(usage.weeklyLimit)}`}
+              subDetail={relativeReset(usage.weeklyResetTime)}
+            />
+            <UsageBar
+              label="Weekly · Opus"
+              percent={usage.opusWeeklyPercentage}
+              detail={formatTokens(usage.opusWeeklyTokensUsed)}
+            />
+            <UsageBar
+              label="Weekly · Sonnet"
+              percent={usage.sonnetWeeklyPercentage}
+              detail={formatTokens(usage.sonnetWeeklyTokensUsed)}
+              subDetail={usage.sonnetWeeklyResetTime ? relativeReset(usage.sonnetWeeklyResetTime) : ''}
+            />
+
+            {usage.costUsed != null && usage.costLimit != null && usage.costLimit > 0 && (
+              <UsageBar
+                label="Spend"
+                percent={(usage.costUsed / usage.costLimit) * 100}
+                detail={`${formatCurrency(usage.costUsed, usage.costCurrency ?? 'USD')} / ${formatCurrency(
+                  usage.costLimit,
+                  usage.costCurrency ?? 'USD',
+                )}`}
+                color="#0A84FF"
+              />
+            )}
+
+            {usage.overageBalance != null && usage.overageBalance > 0 && (
+              <Text style={[styles.note, { color: theme.textSecondary }]}>
+                Overage credit: {formatCurrency(usage.overageBalance, usage.overageBalanceCurrency ?? 'USD')}
+              </Text>
+            )}
+
+            <Text style={[styles.updated, { color: theme.textSecondary }]}>
+              {relativeUpdated(usage.lastUpdated)}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  flex: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  centerPad: { paddingVertical: 40 },
+  content: { padding: 20, paddingBottom: 40 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  title: { fontSize: 26, fontWeight: '800' },
+  subtitle: { fontSize: 13, marginTop: 2 },
+  unpair: { fontSize: 14, fontWeight: '600' },
+  banner: { borderRadius: 12, padding: 14, marginBottom: 20 },
+  bannerText: { fontSize: 14, lineHeight: 20 },
+  retry: { fontSize: 14, fontWeight: '700', marginTop: 8 },
+  note: { fontSize: 13, marginTop: 4 },
+  updated: { fontSize: 12, marginTop: 16, textAlign: 'center' },
 });
