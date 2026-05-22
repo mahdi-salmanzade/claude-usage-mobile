@@ -8,7 +8,11 @@
     "scheme": "claudeusagemobile",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
+      },
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -18,14 +22,14 @@
           "NSAllowsLocalNetworking": true
         }
       },
-      "bundleIdentifier": "com.mahdibordo.claude-usage-mobile"
+      "bundleIdentifier": "com.mindzone.tech.claudeusage.ios"
     },
     "android": {
+      "package": "com.mindzone.tech.claudeusage.android",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#1A1613",
+        "foregroundImage": "./assets/images/icon.png",
+        "monochromeImage": "./assets/images/icon-tinted.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -35,25 +39,45 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
-        }
-      ],
+      "./plugins/with-blank-splash",
       "expo-secure-store",
       [
         "expo-camera",
         {
           "cameraPermission": "Claude Usage uses the camera to scan the pairing QR code shown on your Mac."
+        }
+      ],
+      "expo-notifications",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.mindzone.tech.claudeusage.ios.widgets",
+          "groupIdentifier": "group.com.mindzone.tech.claudeusage",
+          "widgets": [
+            {
+              "name": "SessionWidget",
+              "displayName": "Claude Usage",
+              "description": "Your current Claude session and weekly usage.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge",
+                "accessoryCircular",
+                "accessoryRectangular",
+                "accessoryInline"
+              ]
+            },
+            {
+              "name": "SessionActivity",
+              "displayName": "Claude Session",
+              "description": "Live activity for your active Claude session.",
+              "supportedFamilies": ["systemMedium"]
+            }
+          ]
         }
       ]
     ],

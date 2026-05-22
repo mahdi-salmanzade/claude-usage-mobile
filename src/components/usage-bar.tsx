@@ -1,47 +1,59 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { useTheme } from '@/hooks/use-theme';
-import { statusColor } from '@/lib/format';
+import { Radius, Space, Type, type Palette } from '@/lib/design';
 
 interface Props {
   label: string;
   percent: number;
+  palette: Palette;
+  color: string;
   detail?: string;
   subDetail?: string;
-  /** Override the auto status color (e.g. for cost which isn't a limit). */
-  color?: string;
+  /** Slimmer treatment for nested/secondary metrics (e.g. Opus/Sonnet). */
+  slim?: boolean;
 }
 
-export function UsageBar({ label, percent, detail, subDetail, color }: Props) {
-  const theme = useTheme();
+export function UsageBar({ label, percent, palette, color, detail, subDetail, slim }: Props) {
   const clamped = Math.max(0, Math.min(100, percent));
-  const barColor = color ?? statusColor(clamped);
+  const height = slim ? 6 : 9;
 
   return (
-    <View style={styles.container}>
+    <View style={{ marginBottom: slim ? Space.md : Space.lg }}>
       <View style={styles.headerRow}>
-        <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
-        <Text style={[styles.percent, { color: barColor }]}>{Math.round(clamped)}%</Text>
+        <Text
+          style={[
+            slim ? styles.labelSlim : styles.label,
+            { color: slim ? palette.textSecondary : palette.text },
+          ]}>
+          {label}
+        </Text>
+        <Text style={[styles.percent, { color, fontSize: slim ? Type.label : Type.metric }]}>
+          {Math.round(clamped)}%
+        </Text>
       </View>
 
-      <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
-        <View style={[styles.fill, { width: `${clamped}%`, backgroundColor: barColor }]} />
+      <View style={[styles.track, { backgroundColor: palette.track, height, borderRadius: height / 2 }]}>
+        <View
+          style={[styles.fill, { width: `${clamped}%`, backgroundColor: color, borderRadius: height / 2 }]}
+        />
       </View>
 
-      <View style={styles.footerRow}>
-        <Text style={[styles.detail, { color: theme.textSecondary }]}>{detail ?? ''}</Text>
-        <Text style={[styles.detail, { color: theme.textSecondary }]}>{subDetail ?? ''}</Text>
-      </View>
+      {(detail || subDetail) && (
+        <View style={styles.footerRow}>
+          <Text style={[styles.detail, { color: palette.textFaint }]}>{detail ?? ''}</Text>
+          <Text style={[styles.detail, { color: palette.textFaint }]}>{subDetail ?? ''}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginBottom: 18 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 },
-  label: { fontSize: 15, fontWeight: '600' },
-  percent: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  track: { height: 10, borderRadius: 5, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 5 },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 },
-  detail: { fontSize: 12 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: Space.sm },
+  label: { fontSize: Type.body, fontWeight: '600' },
+  labelSlim: { fontSize: Type.label, fontWeight: '500' },
+  percent: { fontWeight: '700', fontVariant: ['tabular-nums'] },
+  track: { overflow: 'hidden' },
+  fill: { height: '100%' },
+  footerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Space.sm - 2 },
+  detail: { fontSize: Type.caption },
 });

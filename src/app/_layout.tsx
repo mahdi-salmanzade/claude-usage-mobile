@@ -1,20 +1,24 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { usePalette } from '@/lib/design';
 import { PairingProvider } from '@/lib/pairing';
+import { SettingsProvider } from '@/lib/settings';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const palette = usePalette();
   return (
-    <PairingProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="pair" options={{ presentation: 'modal' }} />
-        </Stack>
-      </ThemeProvider>
-    </PairingProvider>
+    <SettingsProvider>
+      <PairingProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: palette.bg } }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="pair" options={{ presentation: 'card' }} />
+            <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ThemeProvider>
+      </PairingProvider>
+    </SettingsProvider>
   );
 }

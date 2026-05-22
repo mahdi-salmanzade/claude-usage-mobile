@@ -3,8 +3,9 @@
  * the device keychain via expo-secure-store.
  */
 import * as SecureStore from 'expo-secure-store';
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import type { Pairing } from './api';
+import { clearUsageCache } from './use-usage';
 
 const STORAGE_KEY = 'claude-usage.pairing.v1';
 
@@ -41,6 +42,7 @@ export function PairingProvider({ children }: { children: React.ReactNode }) {
 
   const clear = async () => {
     await SecureStore.deleteItemAsync(STORAGE_KEY);
+    await clearUsageCache();
     setPairing(null);
   };
 

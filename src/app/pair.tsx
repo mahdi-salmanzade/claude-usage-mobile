@@ -1,4 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -13,14 +14,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useTheme } from '@/hooks/use-theme';
+import { Radius, Space, Type, usePalette, type Palette } from '@/lib/design';
 import { ApiError, ping, parsePairingPayload, type Pairing } from '@/lib/api';
 import { usePairing } from '@/lib/pairing';
 
 type Mode = 'scan' | 'manual';
 
 export default function PairScreen() {
-  const theme = useTheme();
+  const p = usePalette();
   const router = useRouter();
   const { save } = usePairing();
   const [permission, requestPermission] = useCameraPermissions();
@@ -30,12 +31,10 @@ export default function PairScreen() {
   const [connecting, setConnecting] = useState(false);
   const handlingScan = useRef(false);
 
-  // Manual entry fields
   const [host, setHost] = useState('');
   const [port, setPort] = useState('47600');
   const [token, setToken] = useState('');
 
-  // Deep-link pairing: claudeusagemobile://pair?host=..&port=..&token=..
   const params = useLocalSearchParams<{ host?: string; port?: string; token?: string }>();
   const deepLinkHandled = useRef(false);
   useEffect(() => {
@@ -54,8 +53,10 @@ export default function PairScreen() {
     try {
       await ping(pairing);
       await save(pairing);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/');
     } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setStatus(e instanceof ApiError ? e.message : 'Could not connect.');
       handlingScan.current = false;
     } finally {
@@ -71,6 +72,7 @@ export default function PairScreen() {
       return;
     }
     handlingScan.current = true;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     connect(parsed);
   }
 
@@ -84,24 +86,26 @@ export default function PairScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.flex, { backgroundColor: p.bg }]}>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }]}>Pair with your Mac</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+        <Text style={[styles.title, { color: p.text }]}>Pair with your Mac</Text>
+        <Text style={[styles.subtitle, { color: p.textSecondary }]}>
           In the Claude Usage menu bar app, open Settings → Mobile App and enable the companion server.
         </Text>
 
-        <View style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>
+        <View style={[styles.segment, { backgroundColor: p.surfaceSunken }]}>
           {(['scan', 'manual'] as Mode[]).map((m) => (
             <Pressable
               key={m}
-              style={[styles.segmentItem, mode === m && { backgroundColor: theme.backgroundSelected }]}
+              style={[styles.segmentItem, mode === m && { backgroundColor: p.surface }]}
               onPress={() => {
                 setMode(m);
                 setStatus(null);
                 handlingScan.current = false;
               }}>
-              <Text style={[styles.segmentText, { color: theme.text }]}>{m === 'scan' ? 'Scan QR' : 'Enter manually'}</Text>
+              <Text style={[styles.segmentText, { color: mode === m ? p.text : p.textSecondary }]}>
+                {m === 'scan' ? 'Scan QR' : 'Enter manually'}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -109,69 +113,96 @@ export default function PairScreen() {
         {mode === 'scan' ? (
           <View style={styles.scanArea}>
             {!permission ? (
-              <ActivityIndicator />
+              <ActivityIndicator color={p.accent} />
             ) : !permission.granted ? (
-              <View style={styles.center}>
-                <Text style={[styles.subtitle, { color: theme.textSecondary, textAlign: 'center' }]}>
-                  Camera access is needed to scan the pairing code.
+              <View style={styles.permWrap}>
+                <Text style={[styles.permText, { color: p.textSecondary }]}>
+                  Camera access lets you scan the pairing code shown on your Mac.
                 </Text>
-                <Pressable style={[styles.button, { backgroundColor: '#0A84FF' }]} onPress={requestPermission}>
-                  <Text style={styles.buttonText}>Grant camera access</Text>
+                <Pressable style={[styles.primaryBtn, { backgroundColor: p.accent }]} onPress={requestPermission}>
+                  <Text style={styles.primaryBtnText}>Grant camera access</Text>
+                </Pressable>
+                <Pressable onPress={() => setMode('manual')} hitSlop={8}>
+                  <Text style={[styles.linkText, { color: p.accent }]}>Enter details manually instead</Text>
                 </Pressable>
               </View>
             ) : (
-              <View style={styles.cameraWrap}>
+              <View style={[styles.cameraWrap, { borderColor: p.border }]}>
                 <CameraView
                   style={StyleSheet.absoluteFill}
                   facing="back"
                   barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                   onBarcodeScanned={({ data }) => onScanned(data)}
                 />
-                <View style={styles.reticle} pointerEvents="none" />
+                <Reticle color={p.surface} />
+                <Text style={styles.scanHint}>Point at the QR code</Text>
               </View>
             )}
           </View>
         ) : (
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.manualArea}>
-            <Field label="Host" value={host} onChangeText={setHost} placeholder="192.168.1.42" theme={theme}
+            <Field label="Host" value={host} onChangeText={setHost} placeholder="192.168.1.42" palette={p}
               keyboardType="numbers-and-punctuation" autoCapitalize="none" />
-            <Field label="Port" value={port} onChangeText={setPort} placeholder="47600" theme={theme}
+            <Field label="Port" value={port} onChangeText={setPort} placeholder="47600" palette={p}
               keyboardType="number-pad" />
-            <Field label="Token" value={token} onChangeText={setToken} placeholder="paste token" theme={theme}
+            <Field label="Token" value={token} onChangeText={setToken} placeholder="paste token" palette={p}
               autoCapitalize="none" />
             <Pressable
-              style={[styles.button, { backgroundColor: '#0A84FF', opacity: connecting ? 0.6 : 1 }]}
+              style={[styles.primaryBtn, { backgroundColor: p.accent, opacity: connecting ? 0.6 : 1, marginTop: Space.sm }]}
               onPress={onManualConnect}
               disabled={connecting}>
-              {connecting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Connect</Text>}
+              {connecting ? <ActivityIndicator color="#FFFDFA" /> : <Text style={styles.primaryBtnText}>Connect</Text>}
             </Pressable>
           </KeyboardAvoidingView>
         )}
 
         {connecting && mode === 'scan' && (
           <View style={styles.connectingRow}>
-            <ActivityIndicator />
-            <Text style={[styles.subtitle, { color: theme.textSecondary, marginLeft: 8 }]}>Connecting…</Text>
+            <ActivityIndicator color={p.accent} />
+            <Text style={[styles.subtitle, { color: p.textSecondary, marginLeft: Space.sm, marginTop: 0 }]}>
+              Connecting…
+            </Text>
           </View>
         )}
 
-        {status && <Text style={[styles.status, { color: '#FF453A' }]}>{status}</Text>}
+        {status && <Text style={[styles.status, { color: p.critical }]}>{status}</Text>}
       </View>
     </SafeAreaView>
   );
 }
 
+function Reticle({ color }: { color: string }) {
+  return (
+    <View style={styles.reticleWrap} pointerEvents="none">
+      {(['tl', 'tr', 'bl', 'br'] as const).map((c) => (
+        <View key={c} style={[styles.corner, cornerStyle(c, color)]} />
+      ))}
+    </View>
+  );
+}
+
+function cornerStyle(c: 'tl' | 'tr' | 'bl' | 'br', color: string) {
+  const b = 4;
+  const base = { borderColor: color };
+  switch (c) {
+    case 'tl': return { ...base, top: 0, left: 0, borderTopWidth: b, borderLeftWidth: b, borderTopLeftRadius: 10 };
+    case 'tr': return { ...base, top: 0, right: 0, borderTopWidth: b, borderRightWidth: b, borderTopRightRadius: 10 };
+    case 'bl': return { ...base, bottom: 0, left: 0, borderBottomWidth: b, borderLeftWidth: b, borderBottomLeftRadius: 10 };
+    case 'br': return { ...base, bottom: 0, right: 0, borderBottomWidth: b, borderRightWidth: b, borderBottomRightRadius: 10 };
+  }
+}
+
 function Field({
   label,
-  theme,
+  palette,
   ...props
-}: { label: string; theme: ReturnType<typeof useTheme> } & React.ComponentProps<typeof TextInput>) {
+}: { label: string; palette: Palette } & React.ComponentProps<typeof TextInput>) {
   return (
     <View style={styles.field}>
-      <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>{label}</Text>
+      <Text style={[styles.fieldLabel, { color: palette.textFaint }]}>{label}</Text>
       <TextInput
-        style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundElement }]}
-        placeholderTextColor={theme.textSecondary}
+        style={[styles.input, { color: palette.text, backgroundColor: palette.surfaceSunken }]}
+        placeholderTextColor={palette.textFaint}
         autoCorrect={false}
         {...props}
       />
@@ -181,31 +212,31 @@ function Field({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { flex: 1, padding: 20 },
-  center: { alignItems: 'center', justifyContent: 'center', gap: 16 },
-  title: { fontSize: 24, fontWeight: '800', marginTop: 8 },
-  subtitle: { fontSize: 14, lineHeight: 20, marginTop: 6 },
-  segment: { flexDirection: 'row', borderRadius: 10, padding: 3, marginTop: 20 },
-  segmentItem: { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
-  segmentText: { fontSize: 14, fontWeight: '600' },
-  scanArea: { flex: 1, marginTop: 20, alignItems: 'center', justifyContent: 'center' },
-  cameraWrap: { width: '100%', aspectRatio: 1, borderRadius: 20, overflow: 'hidden' },
-  reticle: {
-    position: 'absolute',
-    top: '15%',
-    left: '15%',
-    right: '15%',
-    bottom: '15%',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.85)',
-    borderRadius: 16,
-  },
-  manualArea: { marginTop: 24 },
-  field: { marginBottom: 16 },
-  fieldLabel: { fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  input: { borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  button: { borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 8 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  connectingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16 },
-  status: { fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 16 },
+  content: { flex: 1, padding: Space.xl },
+  title: { fontSize: Type.title + 4, fontWeight: '800', marginTop: Space.sm, letterSpacing: -0.3 },
+  subtitle: { fontSize: Type.body, lineHeight: 21, marginTop: Space.sm },
+
+  segment: { flexDirection: 'row', borderRadius: Radius.sm + 2, padding: 3, marginTop: Space.xl },
+  segmentItem: { flex: 1, paddingVertical: 9, borderRadius: Radius.sm, alignItems: 'center' },
+  segmentText: { fontSize: Type.label, fontWeight: '600' },
+
+  scanArea: { flex: 1, marginTop: Space.xl, alignItems: 'center', justifyContent: 'center' },
+  permWrap: { alignItems: 'center', gap: Space.lg, paddingHorizontal: Space.lg },
+  permText: { fontSize: Type.body, lineHeight: 21, textAlign: 'center' },
+  cameraWrap: { width: '100%', aspectRatio: 1, borderRadius: Radius.lg, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth },
+  reticleWrap: { position: 'absolute', top: '16%', left: '16%', right: '16%', bottom: '16%' },
+  corner: { position: 'absolute', width: 34, height: 34 },
+  scanHint: { position: 'absolute', bottom: Space.lg, alignSelf: 'center', color: '#FFFDFA', fontSize: Type.label, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },
+
+  manualArea: { marginTop: Space.xl },
+  field: { marginBottom: Space.lg },
+  fieldLabel: { fontSize: Type.caption, fontWeight: '700', marginBottom: Space.sm - 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { borderRadius: Radius.sm, paddingHorizontal: Space.lg - 2, paddingVertical: Space.md, fontSize: Type.metric },
+
+  primaryBtn: { borderRadius: Radius.md, paddingVertical: Space.md + 2, paddingHorizontal: Space.xl, alignItems: 'center' },
+  primaryBtnText: { color: '#FFFDFA', fontSize: Type.body, fontWeight: '700' },
+  linkText: { fontSize: Type.label, fontWeight: '600' },
+
+  connectingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Space.lg },
+  status: { fontSize: Type.label, fontWeight: '600', textAlign: 'center', marginTop: Space.lg },
 });

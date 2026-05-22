@@ -7,6 +7,22 @@ View your Claude Code session/weekly usage on your phone, served by the Mac menu
 > derived usage numbers from the Mac's local server — it never authenticates
 > to Claude directly.
 
+## Screenshots
+
+| Pair | Connected | Dashboard |
+|:----:|:---------:|:---------:|
+| <img src="screenshots/pairing.png" width="240" alt="Pair with your Mac by scanning the QR code" /> | <img src="screenshots/connected.png" width="240" alt="Connected, waiting for first fetch" /> | <img src="screenshots/dashboard.png" width="240" alt="Usage dashboard with session ring and weekly breakdown" /> |
+
+## Features
+
+- **Session ring** for the 5-hour window, with live "resets in" countdown.
+- **Weekly breakdown:** all-models, Opus, and Sonnet, each with token counts and its own status color.
+- **Spend** against your limit, plus overage credit.
+- **Connection status:** Live / Stale / Offline, with cached data shown instantly on launch.
+- **Home & Lock Screen widgets** (small / medium / large + accessory) via `expo-widgets`.
+- **Live Activity** for the active session (Dynamic Island + Lock Screen), toggleable in Settings.
+- **Local notifications** when your session runs low or resets.
+
 ## How it works
 
 ```
@@ -59,7 +75,9 @@ claudeusagemobile://pair?host=192.168.1.42&port=47600&token=<token>
 
 ## Develop
 
-Built with **Expo SDK 56** (expo-router, expo-camera, expo-secure-store).
+Built with **Expo SDK 56**: expo-router, expo-camera, expo-secure-store,
+expo-widgets, expo-notifications, expo-haptics, react-native-svg, and
+@expo/ui (SwiftUI) for the widgets and Live Activity.
 
 ```sh
 npm install
