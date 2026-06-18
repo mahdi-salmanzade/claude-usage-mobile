@@ -75,11 +75,14 @@
               "name": "SessionActivity",
               "displayName": "Claude Session",
               "description": "Live activity for your active Claude session.",
-              "supportedFamilies": ["systemMedium"]
+              "supportedFamilies": [
+                "systemMedium"
+              ]
             }
           ]
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
