@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "claude-usage-mobile",
-    "slug": "claude-usage-mobile",
+    "name": "Claude Usage",
+    "slug": "claude-usage",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -103,6 +103,30 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "ExpoWidgetsTarget",
+                  "bundleIdentifier": "com.mindzone.tech.claudeusage.ios.widgets",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.mindzone.tech.claudeusage"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "bd7e745e-e5ef-4158-b66b-e78ebb50360f"
+      }
+    },
+    "owner": "mahdibordo"
   }
 }

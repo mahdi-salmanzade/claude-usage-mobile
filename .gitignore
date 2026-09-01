@@ -41,3 +41,16 @@ example
 # generated native folders
 /ios
 /android
+
+# EAS
+# Local signing material and credential config. `credentials.json` points at
+# keystores and carries their passwords; none of it belongs in the repo.
+credentials.json
+*.keystore
+*.keystore.properties
+
+# Env. `.env` is read at build time, so keep every variant out — only
+# `.env.example` should ever be committed.
+.env
+.env.*
+!.env.example
