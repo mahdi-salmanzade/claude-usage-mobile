@@ -127,13 +127,17 @@ export default function PairScreen() {
               </View>
             ) : (
               <View style={[styles.cameraWrap, { borderColor: p.border }]}>
+                {/* The reticle and hint are white because they sit on a camera
+                    feed. That feed is absent while the camera warms up — and
+                    always absent on a simulator — so the frame carries its own
+                    dark backdrop, or they render white on white. */}
                 <CameraView
                   style={StyleSheet.absoluteFill}
                   facing="back"
                   barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
                   onBarcodeScanned={({ data }) => onScanned(data)}
                 />
-                <Reticle color={p.surface} />
+                <Reticle color="#FFFDFA" />
                 <Text style={styles.scanHint}>Point at the QR code</Text>
               </View>
             )}
@@ -220,7 +224,14 @@ const styles = StyleSheet.create({
   scanArea: { flex: 1, marginTop: Space.xl, alignItems: 'center', justifyContent: 'center' },
   permWrap: { alignItems: 'center', gap: Space.lg, paddingHorizontal: Space.lg },
   permText: { fontSize: Type.body, lineHeight: 21, textAlign: 'center' },
-  cameraWrap: { width: '100%', aspectRatio: 1, borderRadius: Radius.lg, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth },
+  cameraWrap: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: '#15110E',
+  },
   reticleWrap: { position: 'absolute', top: '16%', left: '16%', right: '16%', bottom: '16%' },
   corner: { position: 'absolute', width: 34, height: 34 },
   scanHint: { position: 'absolute', bottom: Space.lg, alignSelf: 'center', color: '#FFFDFA', fontSize: Type.label, fontWeight: '600', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 },

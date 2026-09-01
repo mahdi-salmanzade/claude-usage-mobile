@@ -47,7 +47,7 @@ export function ModelSplitChart({
             ] as [ModelKey, number][]
           )
             .filter(([, v]) => v > 0)
-            .map(([model, tokens]) => ({ day: d.key, label: d.label, model, tokens })),
+            .map(([model, tokens]) => ({ id: `${d.key}:${model}`, day: d.key, label: d.label, model, tokens })),
         ),
     [points],
   );
@@ -66,6 +66,7 @@ export function ModelSplitChart({
           y: 'tokens',
           z: 'model',
           color: 'model',
+          key: 'id',
           layout: stack({ order: ['Opus', 'Sonnet', 'Other'] }),
           radius: Radius.xs,
         }),

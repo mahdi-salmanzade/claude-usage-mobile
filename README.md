@@ -10,9 +10,9 @@ history, see where it's *heading*.
 
 ## Screenshots
 
-| Usage | Analytics | Settings | Dark | Pair |
-|:-----:|:---------:|:--------:|:----:|:----:|
-| <img src="screenshots/overview.png" width="165" alt="Session gauge, projection, and burn-down" /> | <img src="screenshots/analytics.png" width="165" alt="Totals and tokens per day" /> | <img src="screenshots/settings.png" width="165" alt="Settings with history and diagnostics" /> | <img src="screenshots/dark.png" width="165" alt="The same screen in dark mode" /> | <img src="screenshots/pairing.png" width="165" alt="Pairing with your Mac" /> |
+| Usage | Analytics | Detail | Settings | Dark | Pair |
+|:-----:|:---------:|:------:|:--------:|:----:|:----:|
+| <img src="screenshots/overview.png" width="140" alt="Session gauge, projection line and burn-down" /> | <img src="screenshots/analytics.png" width="140" alt="Totals and tokens per day" /> | <img src="screenshots/analytics-detail.png" width="140" alt="Hour profile, week comparison and session peaks" /> | <img src="screenshots/settings.png" width="140" alt="History retention and diagnostics" /> | <img src="screenshots/dark.png" width="140" alt="The dashboard in dark mode" /> | <img src="screenshots/pairing.png" width="140" alt="Pairing with your Mac" /> |
 
 *Captured on iOS 26, where the tab bar, pills, buttons and segmented controls
 are real Liquid Glass.*
