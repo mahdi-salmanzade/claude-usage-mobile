@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DEFAULT_PORT } from '@/lib/api';
 import { Radius, Space, Type, usePalette, type Palette } from '@/lib/design';
 import { ApiError, ping, parsePairingPayload, type Pairing } from '@/lib/api';
 import { usePairing } from '@/lib/pairing';
@@ -22,7 +23,6 @@ type Mode = 'scan' | 'manual';
 
 export default function PairScreen() {
   const p = usePalette();
-  const router = useRouter();
   const { save } = usePairing();
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -32,7 +32,7 @@ export default function PairScreen() {
   const handlingScan = useRef(false);
 
   const [host, setHost] = useState('');
-  const [port, setPort] = useState('47600');
+  const [port, setPort] = useState(String(DEFAULT_PORT));
   const [token, setToken] = useState('');
 
   const params = useLocalSearchParams<{ host?: string; port?: string; token?: string }>();
@@ -41,8 +41,8 @@ export default function PairScreen() {
     if (deepLinkHandled.current) return;
     if (params.host && params.token) {
       deepLinkHandled.current = true;
-      const portNum = parseInt(params.port ?? '47600', 10);
-      connect({ host: params.host, port: Number.isNaN(portNum) ? 47600 : portNum, token: params.token });
+      const portNum = parseInt(params.port ?? String(DEFAULT_PORT), 10);
+      connect({ host: params.host, port: Number.isNaN(portNum) ? DEFAULT_PORT : portNum, token: params.token });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.host, params.port, params.token]);
@@ -52,9 +52,11 @@ export default function PairScreen() {
     setStatus(null);
     try {
       await ping(pairing);
-      await save(pairing);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/');
+      // `Stack.Protected` swaps this screen out for the tabs as soon as the
+      // pairing is stored — an explicit navigation would race that and land on
+      // a route that no longer exists.
+      await save(pairing);
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setStatus(e instanceof ApiError ? e.message : 'Could not connect.');

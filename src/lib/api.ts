@@ -1,13 +1,26 @@
 /**
  * Wire contract + networking for the Claude Usage companion server.
- * Mirrors the `/v1/usage` envelope served by LocalServerService on the Mac.
+ *
+ * Mirrors `LocalServerService.swift` on the Mac field-for-field. Two things
+ * about that encoder drive the types here:
+ *
+ *  - Swift's synthesized `encode(to:)` uses `encodeIfPresent`, so a nil
+ *    optional is an ABSENT KEY, never JSON `null`. Every optional below is
+ *    `?: T`, not `?: T | null`.
+ *  - Dates are `.iso8601` — always UTC `Z`, no fractional seconds
+ *    ("2026-09-01T16:00:00Z"). `Date.parse` handles it; a formatter that
+ *    demands milliseconds will not.
  */
 
+/** The Mac's `Provider` enum. Only these two identities exist. */
+export type ProviderId = 'anthropic' | 'codex';
+
 export interface ClaudeUsage {
+  // ── always present ──────────────────────────────────────────────────────
   sessionTokensUsed: number;
   sessionLimit: number;
   sessionPercentage: number;
-  sessionResetTime: string; // ISO-8601
+  sessionResetTime: string;
 
   weeklyTokensUsed: number;
   weeklyLimit: number;
@@ -19,25 +32,49 @@ export interface ClaudeUsage {
 
   sonnetWeeklyTokensUsed: number;
   sonnetWeeklyPercentage: number;
-  sonnetWeeklyResetTime?: string | null;
 
-  costUsed?: number | null;
-  costLimit?: number | null;
-  costCurrency?: string | null;
+  designWeeklyTokensUsed: number;
+  designWeeklyPercentage: number;
 
-  overageBalance?: number | null;
-  overageBalanceCurrency?: string | null;
+  fableWeeklyTokensUsed: number;
+  fableWeeklyPercentage: number;
 
   lastUpdated: string;
+  /** An object, not a string — Foundation's `TimeZone: Codable` is keyed. */
   userTimezone: { identifier: string };
+
+  // ── optional: the KEY is omitted when nil ───────────────────────────────
+  sonnetWeeklyResetTime?: string;
+  designWeeklyResetTime?: string;
+  fableWeeklyResetTime?: string;
+
+  costUsed?: number;
+  costLimit?: number;
+  costCurrency?: string;
+
+  overageBalance?: number;
+  overageBalanceCurrency?: string;
+
+  /** Codex plan, an opaque raw string — unknown plans pass through verbatim. */
+  planType?: string;
+  creditsBalance?: number;
+  creditsUnlimited?: boolean;
 }
 
 export interface UsageResponse {
   apiVersion: string;
   serverTime: string;
-  profileName?: string | null;
+  profileName?: string;
+  provider?: ProviderId;
   hasData: boolean;
-  usage: ClaudeUsage | null;
+  /** Omitted entirely when `hasData` is false. */
+  usage?: ClaudeUsage;
+}
+
+export interface PingResponse {
+  ok: boolean;
+  app: string;
+  apiVersion: string;
 }
 
 export interface Pairing {
@@ -47,6 +84,7 @@ export interface Pairing {
 }
 
 export const API_VERSION = 'v1';
+export const DEFAULT_PORT = 47600;
 
 const TIMEOUT_MS = 6000;
 
@@ -79,18 +117,27 @@ async function request(pairing: Pairing, path: string): Promise<Response> {
   }
 }
 
-/** Verify host/port/token are valid. Used during pairing. */
-export async function ping(pairing: Pairing): Promise<boolean> {
+/**
+ * Verify host/port/token are valid. Used during pairing.
+ *
+ * The Mac checks auth BEFORE routing, so a wrong token on any path is 401 and
+ * an unknown path with a good token is 404 — "401" genuinely means bad token,
+ * never "old Mac app".
+ */
+export async function ping(pairing: Pairing): Promise<PingResponse> {
   const res = await request(pairing, '/ping');
   if (res.status === 401) throw new ApiError('Pairing token was rejected.', 'unauthorized');
   if (!res.ok) throw new ApiError(`Server responded ${res.status}.`, 'server');
-  const json = (await res.json().catch(() => null)) as { ok?: boolean } | null;
-  return json?.ok === true;
+  const json = (await res.json().catch(() => null)) as PingResponse | null;
+  if (json?.ok !== true) throw new ApiError('That server is not a Claude Usage companion.', 'bad_response');
+  return json;
 }
 
 export async function fetchUsage(pairing: Pairing): Promise<UsageResponse> {
   const res = await request(pairing, '/usage');
-  if (res.status === 401) throw new ApiError('Pairing token was rejected. Re-pair from your Mac.', 'unauthorized');
+  if (res.status === 401) {
+    throw new ApiError('Pairing token was rejected. Re-pair from your Mac.', 'unauthorized');
+  }
   if (!res.ok) throw new ApiError(`Server responded ${res.status}.`, 'server');
   const json = (await res.json().catch(() => null)) as UsageResponse | null;
   if (!json || typeof json.hasData !== 'boolean') {
@@ -100,12 +147,14 @@ export async function fetchUsage(pairing: Pairing): Promise<UsageResponse> {
 }
 
 /**
- * Parses a scanned/typed pairing payload: {"v":1,"host":"...","port":47600,"token":"..."}.
- * Returns null if it isn't a valid Claude Usage pairing code.
+ * Parses a scanned/typed pairing payload: {"v":1,"host":"…","port":47600,"token":"…"}.
+ * Returns null if it isn't a pairing code this app understands — including a
+ * future `v` it has no way to honour.
  */
 export function parsePairingPayload(raw: string): Pairing | null {
   try {
     const obj = JSON.parse(raw);
+    if (obj?.v != null && obj.v !== 1) return null;
     if (
       typeof obj?.host === 'string' &&
       typeof obj?.port === 'number' &&
@@ -119,4 +168,28 @@ export function parsePairingPayload(raw: string): Pairing | null {
     // not JSON
   }
   return null;
+}
+
+/**
+ * Mirror of the Mac's `effectiveSessionPercentage`, which is a computed
+ * property and never crosses the wire. Once `sessionResetTime` has passed the
+ * Mac's own UI reads 0%; without this the phone keeps showing the pre-reset
+ * number until the Mac happens to refetch.
+ */
+export function effectiveSessionPercentage(u: ClaudeUsage, now = Date.now()): number {
+  return Date.parse(u.sessionResetTime) < now ? 0 : u.sessionPercentage;
+}
+
+/** Codex reports percentages only — every token/limit field is 0 by design. */
+export function hasTokenCounts(res: Pick<UsageResponse, 'provider'>): boolean {
+  return res.provider !== 'codex';
+}
+
+/** Anthropic reports Opus/Sonnet/Design/Fable separately; Codex reports none. */
+export function hasModelBreakdown(res: Pick<UsageResponse, 'provider'>): boolean {
+  return res.provider !== 'codex';
+}
+
+export function providerLabel(provider: ProviderId | undefined): string {
+  return provider === 'codex' ? 'OpenAI Codex' : 'Anthropic';
 }

@@ -1,0 +1,24 @@
+{
+  "$comment": "Expo's base sets customConditions: ['react-native'], which @types/node does not declare \u2014 so `node:*` imports fail to resolve under it. The tests run on Node/Bun, not in the app bundle, so they get a plain Node-flavoured config instead.",
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": [
+      "node"
+    ],
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": [
+        "../src/*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

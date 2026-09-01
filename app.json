@@ -69,7 +69,8 @@
                 "accessoryCircular",
                 "accessoryRectangular",
                 "accessoryInline"
-              ]
+              ],
+              "contentMarginsDisabled": false
             },
             {
               "name": "SessionActivity",
@@ -77,12 +78,27 @@
               "description": "Live activity for your active Claude session.",
               "supportedFamilies": [
                 "systemMedium"
-              ]
+              ],
+              "contentMarginsDisabled": false
             }
           ]
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-sqlite",
+      "expo-background-task",
+      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

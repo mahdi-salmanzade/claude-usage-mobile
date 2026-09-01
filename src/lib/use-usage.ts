@@ -1,10 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+
 import { ApiError, fetchUsage, type Pairing, type UsageResponse } from './api';
+import { profileKey, purge, recordSample, withHistory } from './history';
 
 const CACHE_KEY = 'claude-usage.cache.v1';
 const POLL_MS = 30_000;
+/** Retention runs on a timer, not every poll — it is a whole-table scan. */
+const PURGE_EVERY_MS = 60 * 60_000;
 
 export type ConnState = 'connecting' | 'live' | 'stale' | 'error';
 
@@ -15,15 +19,23 @@ export interface UsageState {
   lastFetchedAt: number | null;
   refreshing: boolean;
   refresh: () => void;
+  /** Bumps whenever a new distinct snapshot lands in history, so charts requery. */
+  historyRevision: number;
+  profile: string | null;
 }
 
 /**
  * Owns fetching, caching and connection state for one pairing.
+ *
  * - Hydrates the last good snapshot from SecureStore so launch shows data
  *   instantly (marked "stale" until a fresh fetch lands).
  * - Polls every 30s, refreshes when the app returns to the foreground.
  * - On failure keeps showing cached data as "stale"; only shows "error" when
  *   there is nothing to show.
+ * - Records each DISTINCT snapshot into the history store. That happens here,
+ *   in the fetch path, and not in an effect on `data` — an effect would also
+ *   fire for the cache hydration below and replay an hours-old snapshot into
+ *   the recorder on every cold start.
  */
 export function useUsage(pairing: Pairing | null): UsageState {
   const [data, setData] = useState<UsageResponse | null>(null);
@@ -31,9 +43,12 @@ export function useUsage(pairing: Pairing | null): UsageState {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const [profile, setProfile] = useState<string | null>(null);
 
   const inflight = useRef(false);
   const hasData = useRef(false);
+  const lastPurge = useRef(0);
 
   // Hydrate cached snapshot once.
   useEffect(() => {
@@ -69,9 +84,17 @@ export function useUsage(pairing: Pairing | null): UsageState {
         setLastFetchedAt(at);
         setConn('live');
         setErrorMessage(null);
+        setProfile(profileKey(res, pairing));
         hasData.current = res.hasData || hasData.current;
         if (res.hasData) {
           SecureStore.setItemAsync(CACHE_KEY, JSON.stringify({ data: res, at })).catch(() => {});
+        }
+
+        const result = await withHistory((db) => recordSample(db, res, pairing, at));
+        if (result?.inserted) setHistoryRevision((r) => r + 1);
+        if (result && at - lastPurge.current > PURGE_EVERY_MS) {
+          lastPurge.current = at;
+          void withHistory((db) => purge(db, result.profile, at));
         }
       } catch (e) {
         setErrorMessage(e instanceof ApiError ? e.message : 'Something went wrong.');
@@ -105,6 +128,8 @@ export function useUsage(pairing: Pairing | null): UsageState {
     lastFetchedAt,
     refreshing,
     refresh: () => load(true),
+    historyRevision,
+    profile,
   };
 }
 

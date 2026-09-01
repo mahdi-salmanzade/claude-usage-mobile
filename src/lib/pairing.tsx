@@ -3,8 +3,9 @@
  * the device keychain via expo-secure-store.
  */
 import * as SecureStore from 'expo-secure-store';
-import { createContext, useContext, useEffect, useState } from 'react';
-import type { Pairing } from './api';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+
+import { DEFAULT_PORT, type Pairing } from './api';
 import { clearUsageCache } from './use-usage';
 
 const STORAGE_KEY = 'claude-usage.pairing.v1';
@@ -18,6 +19,27 @@ interface PairingContextValue {
 
 const PairingContext = createContext<PairingContextValue | undefined>(undefined);
 
+/**
+ * Development-only pairing from the environment.
+ *
+ * The only real way in is scanning a QR code, and a simulator has no camera —
+ * so without this there is no way to open the dashboard on a simulator at all.
+ * Set `EXPO_PUBLIC_PAIRING=host:port:token` before `npx expo start`.
+ *
+ * Guarded by `__DEV__`, so it cannot reach a release build even if the variable
+ * is set in the build environment.
+ */
+function devPairing(): Pairing | null {
+  if (!__DEV__) return null;
+  const raw = process.env.EXPO_PUBLIC_PAIRING;
+  if (!raw) return null;
+  const [host, port, ...rest] = raw.split(':');
+  const token = rest.join(':');
+  if (!host || !token) return null;
+  const parsed = Number.parseInt(port ?? '', 10);
+  return { host, port: Number.isNaN(parsed) ? DEFAULT_PORT : parsed, token };
+}
+
 export function PairingProvider({ children }: { children: React.ReactNode }) {
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +48,11 @@ export function PairingProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const stored = await SecureStore.getItemAsync(STORAGE_KEY);
-        if (stored) setPairing(JSON.parse(stored) as Pairing);
+        if (stored) {
+          setPairing(JSON.parse(stored) as Pairing);
+        } else {
+          setPairing(devPairing());
+        }
       } catch {
         // ignore corrupt/missing value
       } finally {
@@ -35,22 +61,22 @@ export function PairingProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const save = async (next: Pairing) => {
+  const save = useCallback(async (next: Pairing) => {
     await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(next));
     setPairing(next);
-  };
+  }, []);
 
-  const clear = async () => {
+  const clear = useCallback(async () => {
     await SecureStore.deleteItemAsync(STORAGE_KEY);
     await clearUsageCache();
     setPairing(null);
-  };
+  }, []);
 
-  return (
-    <PairingContext.Provider value={{ pairing, isLoading, save, clear }}>
-      {children}
-    </PairingContext.Provider>
+  const value = useMemo(
+    () => ({ pairing, isLoading, save, clear }),
+    [pairing, isLoading, save, clear],
   );
+  return <PairingContext.Provider value={value}>{children}</PairingContext.Provider>;
 }
 
 export function usePairing(): PairingContextValue {

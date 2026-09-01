@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import type { UsageResponse } from './api';
+import { effectiveSessionPercentage, hasModelBreakdown, hasTokenCounts, type UsageResponse } from './api';
 import { formatCurrency, formatTokens } from './format';
 import type { SessionActivityProps } from '@/widgets/session-activity';
 import type { SessionWidgetProps } from '@/widgets/session-widget';
@@ -62,30 +62,37 @@ function widgetProps(res: UsageResponse): SessionWidgetProps {
     return empty;
   }
   const hasCost = u.costUsed != null && u.costLimit != null && u.costLimit > 0;
+  // Mirror the Mac's `effectiveSessionPercentage`: once the window has rolled
+  // its own UI reads 0%, and a widget still showing 87% contradicts it.
+  const sessionPct = effectiveSessionPercentage(u);
+  // Codex reports percentages only — every token count is 0 by design, so a
+  // "0 / 0" row would be a fabricated fact rather than a missing one.
+  const showTokens = hasTokenCounts(res);
+  const showModels = hasModelBreakdown(res);
   return {
     hasData: true,
     updated: agoShort(u.lastUpdated),
 
-    sessionFraction: frac(u.sessionPercentage),
-    sessionPctText: pctText(u.sessionPercentage),
+    sessionFraction: frac(sessionPct),
+    sessionPctText: pctText(sessionPct),
     sessionReset: resetShort(u.sessionResetTime),
-    sessionTokens: tokens(u.sessionTokensUsed, u.sessionLimit),
-    sessionAccent: statusHex(u.sessionPercentage),
+    sessionTokens: showTokens ? tokens(u.sessionTokensUsed, u.sessionLimit) : '',
+    sessionAccent: statusHex(sessionPct),
 
     weeklyFraction: frac(u.weeklyPercentage),
     weeklyPctText: pctText(u.weeklyPercentage),
     weeklyReset: resetShort(u.weeklyResetTime),
-    weeklyTokens: tokens(u.weeklyTokensUsed, u.weeklyLimit),
+    weeklyTokens: showTokens ? tokens(u.weeklyTokensUsed, u.weeklyLimit) : '',
     weeklyAccent: statusHex(u.weeklyPercentage),
 
     opusFraction: frac(u.opusWeeklyPercentage),
     opusPctText: pctText(u.opusWeeklyPercentage),
-    opusTokens: `${formatTokens(u.opusWeeklyTokensUsed)} · ${pctText(u.opusWeeklyPercentage)}`,
+    opusTokens: showModels ? `${formatTokens(u.opusWeeklyTokensUsed)} · ${pctText(u.opusWeeklyPercentage)}` : '',
     opusAccent: statusHex(u.opusWeeklyPercentage),
 
     sonnetFraction: frac(u.sonnetWeeklyPercentage),
     sonnetPctText: pctText(u.sonnetWeeklyPercentage),
-    sonnetTokens: `${formatTokens(u.sonnetWeeklyTokensUsed)} · ${pctText(u.sonnetWeeklyPercentage)}`,
+    sonnetTokens: showModels ? `${formatTokens(u.sonnetWeeklyTokensUsed)} · ${pctText(u.sonnetWeeklyPercentage)}` : '',
     sonnetAccent: statusHex(u.sonnetWeeklyPercentage),
 
     hasCost,
@@ -97,14 +104,17 @@ function widgetProps(res: UsageResponse): SessionWidgetProps {
 function activityProps(res: UsageResponse): SessionActivityProps | null {
   const u = res.usage;
   if (!u) return null;
+  const sessionPct = effectiveSessionPercentage(u);
   return {
-    sessionPctText: pctText(u.sessionPercentage),
-    sessionFraction: frac(u.sessionPercentage),
+    sessionPctText: pctText(sessionPct),
+    sessionFraction: frac(sessionPct),
     sessionReset: resetShort(u.sessionResetTime),
-    sessionTokens: tokens(u.sessionTokensUsed, u.sessionLimit),
+    sessionTokens: hasTokenCounts(res) ? tokens(u.sessionTokensUsed, u.sessionLimit) : '',
     weeklyText: `Week ${pctText(u.weeklyPercentage)}`,
-    modelsText: `Opus ${pctText(u.opusWeeklyPercentage)} · Sonnet ${pctText(u.sonnetWeeklyPercentage)}`,
-    accent: statusHex(u.sessionPercentage),
+    modelsText: hasModelBreakdown(res)
+      ? `Opus ${pctText(u.opusWeeklyPercentage)} · Sonnet ${pctText(u.sonnetWeeklyPercentage)}`
+      : (u.planType ?? ''),
+    accent: statusHex(sessionPct),
   };
 }
 
