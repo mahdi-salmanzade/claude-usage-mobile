@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GlassSurface } from '@/components/glass';
 import { SectionCard, SectionLabel } from '@/components/section-card';
+import { SegmentedControl } from '@/components/segmented-control';
 import { useNow } from '@/hooks/use-history';
 import { Radius, Space, Type, usePalette } from '@/lib/design';
 import {
@@ -19,6 +21,8 @@ import { formatBytes, formatDuration, formatPercent, shortAgo } from '@/lib/form
 import { ensureNotificationPermission } from '@/lib/notifications';
 import { usePairing } from '@/lib/pairing';
 import { RETENTION_OPTIONS, useSettings } from '@/lib/settings';
+
+const RETENTION_LABELS = RETENTION_OPTIONS.map((d) => `${d}d`) as unknown as readonly `${number}d`[];
 import { backgroundStatus } from '@/lib/tasks';
 import { useUsageState } from '@/lib/usage-context';
 
@@ -160,15 +164,25 @@ export default function Settings() {
                     Notify when session usage crosses this.
                   </Text>
                 </View>
-                <View style={[styles.stepper, { backgroundColor: p.surfaceSunken }]}>
-                  <Pressable onPress={() => setThreshold(-5)} hitSlop={6} style={styles.stepBtn}>
+                <GlassSurface variant="clear" radius={Radius.sm} style={styles.stepper}>
+                  <Pressable
+                    onPress={() => setThreshold(-5)}
+                    hitSlop={6}
+                    style={styles.stepBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Lower the alert threshold">
                     <Text style={[styles.stepSign, { color: p.accent }]}>−</Text>
                   </Pressable>
                   <Text style={[styles.stepValue, { color: p.text }]}>{prefs.threshold}%</Text>
-                  <Pressable onPress={() => setThreshold(5)} hitSlop={6} style={styles.stepBtn}>
+                  <Pressable
+                    onPress={() => setThreshold(5)}
+                    hitSlop={6}
+                    style={styles.stepBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Raise the alert threshold">
                     <Text style={[styles.stepSign, { color: p.accent }]}>+</Text>
                   </Pressable>
-                </View>
+                </GlassSurface>
               </View>
               <Divider />
               <Row
@@ -196,29 +210,20 @@ export default function Settings() {
             </Text>
           )}
           <Divider />
-          <View style={styles.stepperRow}>
-            <View style={{ flex: 1, paddingRight: Space.lg }}>
+          <View style={styles.stack}>
+            <View>
               <Text style={[styles.rowTitle, { color: p.text }]}>Keep raw samples</Text>
               <Text style={[styles.rowSub, { color: p.textSecondary }]}>
                 Daily and hourly summaries are kept regardless.
               </Text>
             </View>
-            <View style={[styles.segment, { backgroundColor: p.surfaceSunken }]}>
-              {RETENTION_OPTIONS.map((d) => (
-                <Pressable
-                  key={d}
-                  onPress={() => void applyRetention(d)}
-                  style={[styles.segItem, prefs.retentionDays === d && { backgroundColor: p.surface }]}>
-                  <Text
-                    style={[
-                      styles.segText,
-                      { color: prefs.retentionDays === d ? p.text : p.textSecondary },
-                    ]}>
-                    {d}d
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {/* Full width on its own row: three segments beside a two-line
+                label squeezed both into wrapping. */}
+            <SegmentedControl
+              segments={RETENTION_LABELS}
+              value={`${prefs.retentionDays}d`}
+              onChange={(label) => void applyRetention(Number.parseInt(label, 10))}
+            />
           </View>
           <Divider />
           <Pressable onPress={confirmClear} style={styles.actionRow}>
@@ -345,12 +350,10 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Space.lg },
   infoLabel: { fontSize: Type.label, flexShrink: 1 },
   stepperRow: { flexDirection: 'row', alignItems: 'center' },
-  stepper: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.sm, overflow: 'hidden' },
+  stepper: { flexDirection: 'row', alignItems: 'center' },
+  stack: { gap: Space.md },
   stepBtn: { paddingHorizontal: Space.md, paddingVertical: Space.sm },
   stepSign: { fontSize: 20, fontWeight: '700' },
   stepValue: { fontSize: Type.body, fontWeight: '700', minWidth: 42, textAlign: 'center', fontVariant: ['tabular-nums'] },
-  segment: { flexDirection: 'row', borderRadius: Radius.sm, padding: 3 },
-  segItem: { paddingHorizontal: Space.md, paddingVertical: 6, borderRadius: Radius.sm - 2 },
-  segText: { fontSize: Type.caption, fontWeight: '700' },
   footnote: { fontSize: Type.caption, lineHeight: 18, marginTop: Space.xl },
 });

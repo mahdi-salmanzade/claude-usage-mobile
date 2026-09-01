@@ -17,9 +17,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DEFAULT_PORT } from '@/lib/api';
 import { Radius, Space, Type, usePalette, type Palette } from '@/lib/design';
 import { ApiError, ping, parsePairingPayload, type Pairing } from '@/lib/api';
+import { PrimaryButton } from '@/components/primary-button';
+import { SegmentedControl } from '@/components/segmented-control';
 import { usePairing } from '@/lib/pairing';
 
 type Mode = 'scan' | 'manual';
+
+const MODES = ['Scan QR', 'Enter manually'] as const;
 
 export default function PairScreen() {
   const p = usePalette();
@@ -95,21 +99,16 @@ export default function PairScreen() {
           In the Claude Usage menu bar app, open Settings → Mobile App and enable the companion server.
         </Text>
 
-        <View style={[styles.segment, { backgroundColor: p.surfaceSunken }]}>
-          {(['scan', 'manual'] as Mode[]).map((m) => (
-            <Pressable
-              key={m}
-              style={[styles.segmentItem, mode === m && { backgroundColor: p.surface }]}
-              onPress={() => {
-                setMode(m);
-                setStatus(null);
-                handlingScan.current = false;
-              }}>
-              <Text style={[styles.segmentText, { color: mode === m ? p.text : p.textSecondary }]}>
-                {m === 'scan' ? 'Scan QR' : 'Enter manually'}
-              </Text>
-            </Pressable>
-          ))}
+        <View style={styles.segmentWrap}>
+          <SegmentedControl
+            segments={MODES}
+            value={mode === 'scan' ? 'Scan QR' : 'Enter manually'}
+            onChange={(label) => {
+              setMode(label === 'Scan QR' ? 'scan' : 'manual');
+              setStatus(null);
+              handlingScan.current = false;
+            }}
+          />
         </View>
 
         {mode === 'scan' ? (
@@ -121,9 +120,7 @@ export default function PairScreen() {
                 <Text style={[styles.permText, { color: p.textSecondary }]}>
                   Camera access lets you scan the pairing code shown on your Mac.
                 </Text>
-                <Pressable style={[styles.primaryBtn, { backgroundColor: p.accent }]} onPress={requestPermission}>
-                  <Text style={styles.primaryBtnText}>Grant camera access</Text>
-                </Pressable>
+                <PrimaryButton title="Grant camera access" onPress={requestPermission} />
                 <Pressable onPress={() => setMode('manual')} hitSlop={8}>
                   <Text style={[styles.linkText, { color: p.accent }]}>Enter details manually instead</Text>
                 </Pressable>
@@ -149,12 +146,12 @@ export default function PairScreen() {
               keyboardType="number-pad" />
             <Field label="Token" value={token} onChangeText={setToken} placeholder="paste token" palette={p}
               autoCapitalize="none" />
-            <Pressable
-              style={[styles.primaryBtn, { backgroundColor: p.accent, opacity: connecting ? 0.6 : 1, marginTop: Space.sm }]}
+            <PrimaryButton
+              title="Connect"
               onPress={onManualConnect}
-              disabled={connecting}>
-              {connecting ? <ActivityIndicator color="#FFFDFA" /> : <Text style={styles.primaryBtnText}>Connect</Text>}
-            </Pressable>
+              loading={connecting}
+              style={{ marginTop: Space.sm }}
+            />
           </KeyboardAvoidingView>
         )}
 
@@ -218,9 +215,7 @@ const styles = StyleSheet.create({
   title: { fontSize: Type.title + 4, fontWeight: '800', marginTop: Space.sm, letterSpacing: -0.3 },
   subtitle: { fontSize: Type.body, lineHeight: 21, marginTop: Space.sm },
 
-  segment: { flexDirection: 'row', borderRadius: Radius.sm + 2, padding: 3, marginTop: Space.xl },
-  segmentItem: { flex: 1, paddingVertical: 9, borderRadius: Radius.sm, alignItems: 'center' },
-  segmentText: { fontSize: Type.label, fontWeight: '600' },
+  segmentWrap: { marginTop: Space.xl },
 
   scanArea: { flex: 1, marginTop: Space.xl, alignItems: 'center', justifyContent: 'center' },
   permWrap: { alignItems: 'center', gap: Space.lg, paddingHorizontal: Space.lg },
@@ -235,8 +230,6 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: Type.caption, fontWeight: '700', marginBottom: Space.sm - 2, textTransform: 'uppercase', letterSpacing: 0.5 },
   input: { borderRadius: Radius.sm, paddingHorizontal: Space.lg - 2, paddingVertical: Space.md, fontSize: Type.metric },
 
-  primaryBtn: { borderRadius: Radius.md, paddingVertical: Space.md + 2, paddingHorizontal: Space.xl, alignItems: 'center' },
-  primaryBtnText: { color: '#FFFDFA', fontSize: Type.body, fontWeight: '700' },
   linkText: { fontSize: Type.label, fontWeight: '600' },
 
   connectingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Space.lg },

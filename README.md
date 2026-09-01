@@ -10,9 +10,12 @@ history, see where it's *heading*.
 
 ## Screenshots
 
-| Usage | Analytics | Detail | Settings |
-|:-----:|:---------:|:------:|:--------:|
-| <img src="screenshots/overview.png" width="200" alt="Session gauge, projection, and burn-down" /> | <img src="screenshots/analytics.png" width="200" alt="Totals and tokens per day" /> | <img src="screenshots/analytics-detail.png" width="200" alt="Hour profile, week comparison, session peaks" /> | <img src="screenshots/settings.png" width="200" alt="Settings with history and diagnostics" /> |
+| Usage | Analytics | Settings | Dark | Pair |
+|:-----:|:---------:|:--------:|:----:|:----:|
+| <img src="screenshots/overview.png" width="165" alt="Session gauge, projection, and burn-down" /> | <img src="screenshots/analytics.png" width="165" alt="Totals and tokens per day" /> | <img src="screenshots/settings.png" width="165" alt="Settings with history and diagnostics" /> | <img src="screenshots/dark.png" width="165" alt="The same screen in dark mode" /> | <img src="screenshots/pairing.png" width="165" alt="Pairing with your Mac" /> |
+
+*Captured on iOS 26, where the tab bar, pills, buttons and segmented controls
+are real Liquid Glass.*
 
 ## Why there's a history layer
 
@@ -68,6 +71,14 @@ That constraint shapes everything:
   trustworthy.
 
 **Everywhere**
+- **Liquid Glass on iOS 26** — the system's own floating glass tab bar (which
+  minimises as you scroll), plus glass status pills, buttons and segmented
+  controls via `expo-glass-effect`. The tab bar deliberately sets no
+  `backgroundColor` and no explicit `blurEffect`: either one swaps the glass
+  material for a flat fill, which is how apps opt out of Liquid Glass by
+  accident. Every glass surface is gated on `isGlassEffectAPIAvailable()`
+  (some iOS 26 betas crash rather than degrade) and on Reduce Transparency,
+  and falls back to a solid surface off iOS.
 - Home & Lock Screen widgets and a Live Activity (`expo-widgets` + `@expo/ui`).
 - Local notifications: threshold crossing, window reset, and a **pace warning**
   that fires while there's still time to act on it.
@@ -140,7 +151,12 @@ claudeusagemobile://pair?host=192.168.1.42&port=47600&token=<token>
 
 Built with **Expo SDK 57** (React Native 0.86, Hermes V1): expo-router native
 tabs, expo-sqlite, expo-background-task, expo-camera, expo-secure-store,
-expo-widgets, expo-notifications, `@tanstack/charts` and `@expo/ui` (SwiftUI).
+expo-widgets, expo-notifications, expo-glass-effect, `@tanstack/charts` and
+`@expo/ui` (SwiftUI).
+
+Bundle identifiers: `tech.mindzone.agentusage.ios` (widget extension
+`.ios.widgets`, App Group `group.tech.mindzone.agentusage`) and
+`tech.mindzone.agentusage.android`.
 
 ```sh
 npm install
@@ -148,6 +164,12 @@ npm run typecheck     # app + tests
 npm test              # 37 unit tests over the history math
 npx expo run:ios      # or: npx expo run:android
 ```
+
+Liquid Glass only renders on an **iOS 26+** device or simulator. On anything
+older the same components fall back to solid surfaces, so run there when you
+are checking the glass.
+
+Cloud builds go through EAS (`eas.json`); `production` builds an APK on Android.
 
 A development build is required (not Expo Go) — pairing relies on the
 local-network ATS exception and camera config baked in at build time, and

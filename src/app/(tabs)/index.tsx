@@ -10,6 +10,7 @@ import { SplitBar } from '@/components/charts/split-bar';
 import { CoverageFooter } from '@/components/coverage-footer';
 import { DeltaLabel } from '@/components/delta-label';
 import { EmptyState } from '@/components/empty-state';
+import { PrimaryButton } from '@/components/primary-button';
 import { ProjectionLine } from '@/components/projection-line';
 import { SectionCard } from '@/components/section-card';
 import { StatusPill } from '@/components/status-pill';
@@ -127,9 +128,7 @@ export default function Overview() {
           <Text style={[styles.errorBody, { color: p.textSecondary }]}>
             {errorMessage ?? 'Make sure the companion server is on and you share a network.'}
           </Text>
-          <Pressable style={[styles.primaryBtn, { backgroundColor: p.accent }]} onPress={manualRefresh}>
-            <Text style={styles.primaryBtnText}>Try again</Text>
-          </Pressable>
+          <PrimaryButton title="Try again" onPress={manualRefresh} style={styles.retry} />
           <Pressable onPress={clear} hitSlop={10} style={{ marginTop: Space.lg }}>
             <Text style={[styles.unpair, { color: p.textFaint }]}>Unpair this Mac</Text>
           </Pressable>
@@ -421,6 +420,5 @@ const styles = StyleSheet.create({
   errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Space.xl },
   errorTitle: { fontSize: Type.title, fontWeight: '800', marginBottom: Space.sm },
   errorBody: { fontSize: Type.body, lineHeight: 22, textAlign: 'center', marginBottom: Space.xl },
-  primaryBtn: { borderRadius: Radius.md, paddingVertical: Space.md + 2, paddingHorizontal: Space.xxl },
-  primaryBtnText: { color: '#FFFDFA', fontSize: Type.body, fontWeight: '700' },
+  retry: { alignSelf: 'center', minWidth: 200 },
 });
