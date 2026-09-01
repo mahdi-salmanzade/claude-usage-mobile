@@ -22,10 +22,10 @@
           "NSAllowsLocalNetworking": true
         }
       },
-      "bundleIdentifier": "com.mindzone.tech.claudeusage.ios"
+      "bundleIdentifier": "tech.mindzone.agentusage.ios"
     },
     "android": {
-      "package": "com.mindzone.tech.claudeusage.android",
+      "package": "tech.mindzone.agentusage.android",
       "adaptiveIcon": {
         "backgroundColor": "#1A1613",
         "foregroundImage": "./assets/images/icon.png",
@@ -55,8 +55,8 @@
       [
         "expo-widgets",
         {
-          "bundleIdentifier": "com.mindzone.tech.claudeusage.ios.widgets",
-          "groupIdentifier": "group.com.mindzone.tech.claudeusage",
+          "bundleIdentifier": "tech.mindzone.agentusage.ios.widgets",
+          "groupIdentifier": "group.tech.mindzone.agentusage",
           "widgets": [
             {
               "name": "SessionWidget",
@@ -113,10 +113,10 @@
               "appExtensions": [
                 {
                   "targetName": "ExpoWidgetsTarget",
-                  "bundleIdentifier": "com.mindzone.tech.claudeusage.ios.widgets",
+                  "bundleIdentifier": "tech.mindzone.agentusage.ios.widgets",
                   "entitlements": {
                     "com.apple.security.application-groups": [
-                      "group.com.mindzone.tech.claudeusage"
+                      "group.tech.mindzone.agentusage"
                     ]
                   }
                 }
