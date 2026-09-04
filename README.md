@@ -104,6 +104,20 @@ Claude API ──sessionKey──▶ Mac app (LocalServerService, opt-in)
 
 The Mac must be awake and on the same network (or reachable via Tailscale).
 
+### If your Mac app has no companion server
+
+`LocalServerService` only exists on the local-companion branch; the released
+tracker (3.3.0) has none. `scripts/companion-server.py` bridges the gap — it
+reads the snapshot the stock app already keeps in `UserDefaults`, reuses the
+same `localServerToken`, and speaks the identical wire contract, so the app
+pairs with it exactly as it would with a patched build.
+
+```sh
+python3 scripts/companion-server.py    # prints host, port, token and the QR payload
+```
+
+Read-only, no dependencies, and the session key never leaves the Keychain.
+
 ## Wire contract (`GET /v1/usage`)
 
 Mirrors `LocalServerService.swift` field-for-field. Two encoder details matter:
