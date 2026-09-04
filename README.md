@@ -184,3 +184,11 @@ EXPO_PUBLIC_PAIRING=192.168.1.42:47600:<token> npx expo start
 ```
 
 See [`AGENTS.md`](AGENTS.md) for the version pins that must not drift.
+
+## Legal
+
+[Privacy Policy](PRIVACY.md) · [Terms of Use](TERMS.md)
+
+Published by MindZone. Not affiliated with or endorsed by Anthropic PBC;
+"Claude" is a trademark of Anthropic PBC.
+

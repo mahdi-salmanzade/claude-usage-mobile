@@ -1,0 +1,210 @@
+================================================================================
+APP STORE CONNECT — TESTFLIGHT TEST INFORMATION
+App:        Claude Usage
+Bundle ID:  tech.mindzone.agentusage.ios
+Publisher:  MindZone
+Prepared:   4 September 2026
+Track:      PUBLIC BETA (external testing via public link)
+================================================================================
+
+Paste each block into the matching field in App Store Connect →
+TestFlight → Test Information → English (U.S.).
+
+Public-link testing is EXTERNAL testing, so Beta App Review applies to the
+first build and to any build that changes what the app does. Beta App
+Description, Feedback Email and the Beta App Review contact are all required
+before the public link can be enabled.
+
+
+================================================================================
+1. BETA APP DESCRIPTION            (max 4000 — used: 2299)
+================================================================================
+
+Claude Usage is a companion app for the Claude Usage Tracker macOS menu bar
+app. It shows your Claude Code session and weekly usage on your phone — and,
+because the phone keeps its own history, where that usage is heading.
+
+REQUIRES A MAC. There is no account and nothing to sign up for. The app never
+talks to Anthropic; it reads derived usage numbers from an opt-in local server
+inside the Mac app, over your own network. Your Claude session key never leaves
+your Mac.
+
+Getting started
+1. On your Mac, open Claude Usage Tracker → Settings → Mobile App → enable the
+   companion server. A QR code appears.
+2. In this app, tap Scan QR — or Enter manually — and pair.
+3. Keep the Mac awake and on the same network (Tailscale or any private network
+   works too). The dashboard refreshes every 30 seconds and on pull-to-refresh.
+
+What to try
+• Overview — the 5-hour session gauge, the projection marker showing where the
+  window is heading, and the burn-down chart with its runway to reset.
+• Analytics — 24h / 7d / 30d totals, tokens per day (scrub the chart, it has
+  haptics), burn rate, hour-of-day profile, this week vs last, session peaks.
+• Add the Home Screen and Lock Screen widgets, and watch the Live Activity
+  during an active session.
+• Leave it paired for a day or two. The charts only get interesting once the
+  phone has accumulated its own history.
+
+Known in this build
+• Charts are sparse until the phone has recorded several distinct snapshots from
+  the Mac. Days the app was not running render as hollow "no coverage" marks —
+  that is deliberate. An empty day and an unobserved day are not the same thing
+  and the app refuses to draw them the same way.
+• Background refresh is opportunistic; iOS decides when it runs.
+• Liquid Glass surfaces require iOS 26. On earlier versions the same controls
+  render as solid materials.
+• Android is not yet tested.
+
+Feedback wanted most
+• Does the projection ever feel wrong or overconfident?
+• Does pairing work for you over Tailscale, a VPN, or a guest network?
+• Battery impact if you leave it paired all day.
+• Anything in Analytics you looked at and could not interpret.
+
+Send feedback from TestFlight (screenshot → share) or to publish@appnest.tech.
+
+
+================================================================================
+2. FEEDBACK EMAIL
+================================================================================
+
+publish@appnest.tech
+
+
+================================================================================
+3. MARKETING URL
+================================================================================
+
+https://github.com/mahdi-salmanzade/claude-usage-mobile
+
+
+================================================================================
+4. PRIVACY POLICY URL
+================================================================================
+
+https://github.com/mahdi-salmanzade/claude-usage-mobile/blob/main/PRIVACY.md
+
+(Terms of Use, for the App Information page / EULA field:
+ https://github.com/mahdi-salmanzade/claude-usage-mobile/blob/main/TERMS.md)
+
+
+================================================================================
+5. BETA APP REVIEW INFORMATION — CONTACT
+================================================================================
+
+First Name:     <FILL IN>
+Last Name:      <FILL IN>
+Phone number:   <FILL IN — must be reachable, include country code>
+Email:          publish@appnest.tech
+
+
+================================================================================
+6. SIGN-IN INFORMATION
+================================================================================
+
+Sign-in required:   NO  — leave the checkbox UNCHECKED.
+
+The app has no account system, no login, and no back end. Do not supply a user
+name or password; there is nothing to sign in to.
+
+
+================================================================================
+7. REVIEW NOTES                    (max 4000 — used: 3172)
+================================================================================
+
+NO ACCOUNT OR SIGN-IN. There is no login, no back end operated by us, and no
+Anthropic API access from the device.
+
+COMPANION APP — REQUIRES A MAC ON THE SAME NETWORK
+Claude Usage is a read-only viewer for data served by "Claude Usage Tracker", a
+free open-source macOS menu bar app running on the tester's own Mac. The Mac app
+exposes an opt-in local HTTP server; this app pairs with it by QR code and polls
+two read-only endpoints over the local network.
+
+On first launch the app shows a pairing screen. Without a paired Mac it cannot
+display usage data, in the same way a companion app for a hardware accessory
+cannot function without the accessory. To review the app in full:
+
+DEMO VIDEO — complete walkthrough with live data: pairing by QR code, the
+Overview tab (session gauge, projection, burn-down), the Analytics tab across
+24h / 7d / 30d, Settings, the Home and Lock Screen widgets, and the Live
+Activity.
+    <PASTE VIDEO URL HERE>
+
+LIVE TEST SERVER — if you would prefer to exercise the app yourself rather than
+watch the video, email publish@appnest.tech and we will stand up an
+internet-reachable companion server and send you a host, port and token within
+one business day. Pair with them via "Enter manually" on the pairing screen.
+
+PERMISSIONS
+• Camera — used only to scan the pairing QR code shown by the Mac app. Frames
+  are processed on-device to read the code and are never stored or transmitted.
+  Declining is fine: "Enter manually" accepts the host, port and token as text.
+• Local Network — required by iOS to reach the Mac at a local address. Requests
+  go only to the paired host and port.
+• Notifications — optional. All notifications are generated locally on the
+  device (usage threshold crossed, session window reset, pace warning). There is
+  no push server and we send nothing.
+• Background App Refresh — optional. Performs the same single local request so
+  history and widgets stay current while the app is closed.
+
+NETWORK BEHAVIOUR
+Exactly two requests, both to the paired Mac only, both authenticated with a
+Bearer token the Mac generates: GET /v1/ping and GET /v1/usage. The app cannot
+write anything. It never contacts Anthropic and never sees the Claude session
+key, which stays on the Mac.
+
+PRIVACY
+No analytics, no advertising, no attribution, no crash reporting, no third-party
+SDKs, no accounts. Usage history is stored locally in SQLite; the pairing token
+is stored in the Keychain. Nothing is transmitted off-device except the LAN
+request to the tester's own Mac. App Privacy is declared as Data Not Collected.
+Policy: https://github.com/mahdi-salmanzade/claude-usage-mobile/blob/main/PRIVACY.md
+
+TRADEMARK / AFFILIATION
+MindZone is not affiliated with or endorsed by Anthropic PBC. "Claude" and
+"Claude Code" appear only descriptively, to identify the service whose usage the
+app displays, as stated in the app's Terms and in the About screen.
+
+ENCRYPTION
+No non-exempt encryption. usesNonExemptEncryption is declared false; the app uses
+only standard platform APIs and does not implement its own cryptography.
+
+Contact: publish@appnest.tech
+
+
+================================================================================
+8. IF YOU ADD A "USE SAMPLE DATA" MODE — insert into Review Notes
+================================================================================
+
+Insert this immediately before the DEMO VIDEO paragraph in section 7, and it
+becomes by far the strongest answer to Guideline 2.1:
+
+    DEMO MODE — NO MAC NEEDED
+    On the pairing screen, tap "Use sample data". This loads a bundled, seeded
+    dataset so every screen — Overview, Analytics, Settings, the widgets and the
+    Live Activity — can be reviewed offline, with no Mac and no network. Tap
+    "Unpair" in Settings to return to the pairing screen.
+
+
+================================================================================
+9. CHECKLIST BEFORE ENABLING THE PUBLIC LINK
+================================================================================
+
+[ ] Record and host the demo video; paste the URL into Review Notes (section 7).
+    Reviewers cannot pair with a Mac they do not have. Without a video or a demo
+    mode this build is a Guideline 2.1 rejection.
+[ ] Fill in the reviewer contact name and phone (section 5).
+[ ] Set the app category in App Information (Developer Tools).
+[ ] Confirm export compliance — already answered by usesNonExemptEncryption:
+    false in app.json; no prompt should appear.
+[ ] Set the Privacy Policy URL in App Information as well as here.
+[ ] Complete the App Privacy questionnaire as "Data Not Collected".
+[ ] Screenshots: TestFlight shows screenshots only from a version that has
+    reached "Ready for Distribution". This app has never shipped, so the
+    invitation page will show none. Nothing to fix — expected for a first beta.
+[ ] Decide on the display name. "Claude" is an Anthropic trademark; the safer
+    App Store name is "Agent Usage" (matching the bundle id) with "for Claude
+    Code" as the subtitle. Beta App Review is lighter than full App Review, so
+    this may pass now and be raised at App Store submission.
