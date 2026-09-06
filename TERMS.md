@@ -34,8 +34,10 @@ To use the App you must:
 While distributed through TestFlight or any other pre-release channel, the App is
 **beta software provided for testing**. It may be incomplete, may contain defects,
 may lose locally stored history between builds, and may be modified or withdrawn
-at any time without notice. Do not rely on it for anything consequential. Builds
-expire in accordance with Apple's TestFlight rules.
+at any time without notice. Do not rely on it for anything consequential. iOS
+builds expire in accordance with Apple's TestFlight rules. The Android build is
+distributed as an APK you install yourself; it does not expire and does not
+update itself, so you install new versions manually.
 
 Feedback you send us about the App may be used freely to improve it, without
 obligation or compensation to you.

@@ -8,6 +8,32 @@ history, see where it's *heading*.
 > derived usage numbers from the Mac's local server — it never authenticates
 > to Claude directly.
 
+## Install
+
+| Platform | Install | Needs |
+|---|---|---|
+| **iOS** | [Join the TestFlight public beta](https://testflight.apple.com/join/nPez6dZF) | iOS 16.4+ |
+| **Android** | [Download the APK](https://github.com/mahdi-salmanzade/claude-usage-mobile/releases/latest) (sideload) | Android 7.0+ |
+
+Both builds need a Mac on the same network running [Claude Usage
+Tracker](https://github.com/hamed-elfayome/Claude-Usage-Tracker) and a
+companion server ([see below](#if-your-mac-app-has-no-companion-server)) —
+without one there is nothing to pair with and nothing to show.
+
+The Android APK is signed with an EAS-managed key rather than by Google Play, so
+Android will ask you to allow installs from your browser or file manager the
+first time. It is one universal APK carrying all four ABIs — that is why it is
+~138 MB — so it installs on any phone or emulator without you picking a
+variant. Each release names the EAS build it came from, so the APK can be traced
+back to the commit that produced it.
+
+**Not on Android:** Liquid Glass (iOS 26 only — Android falls back to solid
+surfaces), Home & Lock Screen widgets, and the Live Activity. Pairing, polling,
+history, every chart and the notifications are shared code and behave the same,
+but the Android build is new and has had far less time on real devices than the
+iOS one — [open an issue](https://github.com/mahdi-salmanzade/claude-usage-mobile/issues)
+if something there is off.
+
 ## Screenshots
 
 | Usage | Analytics | Detail | Settings | Dark | Pair |
@@ -183,7 +209,13 @@ Liquid Glass only renders on an **iOS 26+** device or simulator. On anything
 older the same components fall back to solid surfaces, so run there when you
 are checking the glass.
 
-Cloud builds go through EAS (`eas.json`); `production` builds an APK on Android.
+Cloud builds go through EAS (`eas.json`). The `production` profile builds an
+APK on Android — that is the artifact attached to each GitHub release:
+
+```sh
+eas build --platform android --profile production
+gh release create vX.Y.Z path/to/app.apk
+```
 
 A development build is required (not Expo Go) — pairing relies on the
 local-network ATS exception and camera config baked in at build time, and

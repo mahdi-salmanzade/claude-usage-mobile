@@ -5,6 +5,7 @@ Bundle ID:  tech.mindzone.agentusage.ios
 Publisher:  MindZone
 Prepared:   4 September 2026
 Track:      PUBLIC BETA (external testing via public link)
+Join link:  https://testflight.apple.com/join/nPez6dZF   (live)
 ================================================================================
 
 Paste each block into the matching field in App Store Connect →
