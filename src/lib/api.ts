@@ -146,6 +146,15 @@ export async function fetchUsage(pairing: Pairing): Promise<UsageResponse> {
   return json;
 }
 
+/** One validation path for manual entry, QR codes, and deep links. */
+export function validatePairing(value: Pairing): Pairing | null {
+  const host = value.host.trim();
+  const token = value.token.trim();
+  if (!host || /[\s/@?#]/.test(host) || !token ||
+      !Number.isInteger(value.port) || value.port < 1 || value.port > 65535) return null;
+  return { host, port: value.port, token };
+}
+
 /**
  * Parses a scanned/typed pairing payload: {"v":1,"host":"…","port":47600,"token":"…"}.
  * Returns null if it isn't a pairing code this app understands — including a
@@ -162,7 +171,7 @@ export function parsePairingPayload(raw: string): Pairing | null {
       obj.host.length > 0 &&
       obj.token.length > 0
     ) {
-      return { host: obj.host, port: obj.port, token: obj.token };
+      return validatePairing({ host: obj.host, port: obj.port, token: obj.token });
     }
   } catch {
     // not JSON

@@ -44,6 +44,7 @@ export function StatusPill({ conn, label, palette, onPress }: Props) {
 const styles = StyleSheet.create({
   pill: { alignSelf: 'flex-start' },
   row: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Space.md,

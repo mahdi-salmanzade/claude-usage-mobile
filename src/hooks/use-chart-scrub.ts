@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import { runOnJS, useSharedValue } from 'react-native-reanimated';
 import type { ChartScene } from '@tanstack/charts/types';
@@ -30,21 +30,22 @@ export function useChartScrub<T>(
   /** Records the plot box the axis leaves for the marks, as scene fractions. */
   const onRender = useCallback(
     ({ scene }: { scene: ChartScene<any, any, any> }) => {
-      plot.value =
+      plot.set(
         scene.width > 0 && count > 0
           ? {
               start: scene.chart.x / scene.width,
               step: scene.chart.width / scene.width / count,
               count,
             }
-          : { start: 0, step: 0, count: 0 };
+          : { start: 0, step: 0, count: 0 },
+      );
     },
     [plot, count],
   );
 
   const onLayout = useCallback(
     (e: { nativeEvent: { layout: { width: number } } }) => {
-      chartWidth.value = e.nativeEvent.layout.width;
+      chartWidth.set(e.nativeEvent.layout.width);
     },
     [chartWidth],
   );
@@ -58,7 +59,7 @@ export function useChartScrub<T>(
       const raw = Math.floor((x / w - p.start) / p.step);
       const index = Math.min(Math.max(raw, 0), p.count - 1);
       if (index === lastIndex.value) return;
-      lastIndex.value = index;
+      lastIndex.set(index);
       runOnJS(onFocusIndex)(index);
     };
 
@@ -66,7 +67,7 @@ export function useChartScrub<T>(
     const release = () => {
       'worklet';
       if (panning.value || holding.value) return;
-      lastIndex.value = -1;
+      lastIndex.set(-1);
       runOnJS(onRelease)();
     };
 
@@ -74,14 +75,14 @@ export function useChartScrub<T>(
       .activeOffsetX([-6, 6])
       .failOffsetY([-14, 14])
       .onStart((e) => {
-        panning.value = true;
+        panning.set(true);
         scrubTo(e.x);
       })
       .onUpdate((e) => scrubTo(e.x))
       // Fires on failure too — only release a pan that actually activated.
       .onFinalize(() => {
         if (!panning.value) return;
-        panning.value = false;
+        panning.set(false);
         release();
       });
 
@@ -90,12 +91,12 @@ export function useChartScrub<T>(
       .minDuration(200)
       .maxDistance(12)
       .onStart((e) => {
-        holding.value = true;
+        holding.set(true);
         scrubTo(e.x);
       })
       .onFinalize(() => {
         if (!holding.value) return;
-        holding.value = false;
+        holding.set(false);
         release();
       });
 
@@ -103,12 +104,4 @@ export function useChartScrub<T>(
   }, [chartWidth, holding, lastIndex, onFocusIndex, onRelease, panning, plot]);
 
   return { gesture, onRender, onLayout };
-}
-
-/**
- * Tracks the currently-scrubbed key so a chart only reports real changes, and
- * so a programmatic clear can't leave a lit band under a bucket nothing reads.
- */
-export function useScrubKey() {
-  return useRef<string | null>(null);
 }

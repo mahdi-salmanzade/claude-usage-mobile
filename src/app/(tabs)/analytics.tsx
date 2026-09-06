@@ -16,18 +16,16 @@ import { SegmentedControl } from '@/components/segmented-control';
 import { StatCard } from '@/components/stat-card';
 import { useAnalytics, useLiveMetrics } from '@/hooks/use-analytics';
 import { type Range, useNow } from '@/hooks/use-history';
-import { hasModelBreakdown } from '@/lib/api';
+import { hasModelBreakdown, hasTokenCounts } from '@/lib/api';
 import { Space, Type, usePalette } from '@/lib/design';
 import { deviceTimeZone } from '@/lib/history';
 import { formatDayDetail, formatMonthDay, formatRate, formatTokens, weekdayInitial } from '@/lib/format';
-import { usePairing } from '@/lib/pairing';
 import { useUsageState } from '@/lib/usage-context';
 
 const RANGES = ['24h', '7d', '30d'] as const;
 
 export default function Analytics() {
   const p = usePalette();
-  const { pairing } = usePairing();
   const { data, historyRevision, profile } = useUsageState();
   const now = useNow(30_000);
 
@@ -73,6 +71,7 @@ export default function Analytics() {
     };
   }, [points]);
 
+  const showTokens = hasTokenCounts(data ?? {});
   const hasHistory = (analytics?.coverage.sampleCount ?? 0) > 1;
 
   return (
@@ -83,12 +82,14 @@ export default function Analytics() {
         </View>
         <SegmentedControl segments={RANGES} value={range} onChange={setRange} />
 
-        {!hasHistory ? (
+        {!showTokens || !hasHistory ? (
           <View style={{ marginTop: Space.xl }}>
             <EmptyState
-              title={loading ? 'Loading history' : 'No history yet'}
+              title={!showTokens ? 'Token analytics unavailable' : loading ? 'Loading history' : 'No history yet'}
               body={
-                loading
+                !showTokens
+                  ? 'Codex reports usage percentages rather than token counts. Check the Usage tab for your session and weekly limits.'
+                  : loading
                   ? ' '
                   : 'Your Mac only reports a snapshot, so this app builds history as it watches. Charts fill in over the next few hours — turn on background refresh in Settings so it keeps collecting when the app is closed.'
               }

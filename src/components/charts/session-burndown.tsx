@@ -9,8 +9,7 @@ import { useMemo } from 'react';
 
 import { Type, usePalette } from '@/lib/design';
 import { formatClock, formatTokens } from '@/lib/format';
-import type { SessionPoint } from '@/lib/history';
-import { projectionRay, type Projection } from '@/lib/history';
+import { projectionRay, type Projection, type SessionPoint } from '@/lib/history';
 
 const CHART_HEIGHT = 150;
 

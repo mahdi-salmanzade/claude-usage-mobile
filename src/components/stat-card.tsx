@@ -25,11 +25,11 @@ export function StatCard({ label, value, unit, footer, valueColor, style }: Stat
   return (
     <View
       style={[styles.card, { backgroundColor: p.surface, borderColor: p.border }, style]}>
-      <Text style={[styles.label, { color: p.textSecondary }]} numberOfLines={1}>
+      <Text style={[styles.label, { color: p.textSecondary }]} >
         {label}
       </Text>
       <View style={styles.valueRow}>
-        <Text style={[styles.value, { color: valueColor ?? p.text }]} numberOfLines={1}>
+        <Text style={[styles.value, { color: valueColor ?? p.text }]} >
           {value}
         </Text>
         {!!unit && <Text style={[styles.unit, { color: p.textFaint }]}>{unit}</Text>}
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
     gap: Space.xs,
   },
   label: { fontSize: Type.micro, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
-  valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: Space.xs },
+  valueRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Space.xs },
   value: { fontSize: Type.title, fontWeight: '800', fontVariant: ['tabular-nums'], letterSpacing: -0.4 },
   unit: { fontSize: Type.caption, fontWeight: '600' },
-  footerSlot: { height: FOOTER_HEIGHT, justifyContent: 'center' },
+  footerSlot: { minHeight: FOOTER_HEIGHT, justifyContent: 'center' },
 });

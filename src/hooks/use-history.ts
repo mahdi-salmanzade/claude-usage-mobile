@@ -24,15 +24,13 @@ export function useHistoryQuery<T>(
   const [state, setState] = useState<QueryState<T>>({ data: null, loading: enabled, error: null });
 
   useEffect(() => {
-    if (!enabled) {
-      setState({ data: null, loading: false, error: null });
-      return;
-    }
+    if (!enabled) return;
     let active = true;
-    setState((s) => ({ ...s, loading: true }));
     (async () => {
       try {
         const db = await getHistoryDb();
+        if (!active) return;
+        setState((s) => ({ ...s, loading: true }));
         const data = await run(db);
         if (active) setState({ data, loading: false, error: null });
       } catch (e) {
@@ -47,7 +45,7 @@ export function useHistoryQuery<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, enabled]);
 
-  return state;
+  return enabled ? state : { data: null, loading: false, error: null };
 }
 
 /** A monotonically increasing "now", ticked every `ms`, for countdowns. */

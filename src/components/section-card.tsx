@@ -28,7 +28,7 @@ export function SectionCard({
           <View style={styles.trailing}>{trailing}</View>
         </View>
       )}
-      <View style={contentStyle}>{children}</View>
+      <View style={[styles.content, contentStyle]}>{children}</View>
     </View>
   );
 }
@@ -45,7 +45,8 @@ const styles = StyleSheet.create({
     padding: Space.xl,
     gap: Space.lg,
   },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  content: { gap: Space.lg },
+  head: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.sm, alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: Type.micro, fontWeight: '700', letterSpacing: 1 },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: Space.sm },
   sectionLabel: {

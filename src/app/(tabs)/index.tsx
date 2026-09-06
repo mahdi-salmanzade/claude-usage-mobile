@@ -26,7 +26,6 @@ import {
   formatCurrency,
   formatDuration,
   formatMonthDay,
-  formatPercent,
   formatTokens,
   relativeReset,
   shortAgo,
@@ -82,15 +81,15 @@ export default function Overview() {
   // Haptic when a manual refresh resolves.
   const manualPending = useRef(false);
   useEffect(() => {
-    if (!manualPending.current) return;
+    if (!manualPending.current || refreshing) return;
     if (conn === 'live') {
       manualPending.current = false;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else if (conn === 'error') {
+    } else if (conn === 'error' || conn === 'stale') {
       manualPending.current = false;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
-  }, [conn]);
+  }, [conn, refreshing]);
 
   const manualRefresh = () => {
     manualPending.current = true;
@@ -128,8 +127,8 @@ export default function Overview() {
           <Text style={[styles.errorBody, { color: p.textSecondary }]}>
             {errorMessage ?? 'Make sure the companion server is on and you share a network.'}
           </Text>
-          <PrimaryButton title="Try again" onPress={manualRefresh} style={styles.retry} />
-          <Pressable onPress={clear} hitSlop={10} style={{ marginTop: Space.lg }}>
+          <PrimaryButton title="Try again" loading={refreshing} onPress={manualRefresh} style={styles.retry} />
+          <Pressable onPress={clear} accessibilityRole="button" hitSlop={10} style={{ marginTop: Space.lg, minHeight: 44, justifyContent: 'center' }}>
             <Text style={[styles.unpair, { color: p.textFaint }]}>Unpair this Mac</Text>
           </Pressable>
         </View>
@@ -192,12 +191,14 @@ export default function Overview() {
           <Text style={[styles.resetLine, { color: p.textSecondary }]}>
             {usage ? `Session ${relativeReset(usage.sessionResetTime)}` : 'Waiting for first fetch'}
           </Text>
-          <View style={styles.projection}>
-            <ProjectionLine metrics={metrics} now={now} />
-          </View>
+          {showTokens && (
+            <View style={styles.projection}>
+              <ProjectionLine metrics={metrics} now={now} />
+            </View>
+          )}
         </View>
 
-        {!data?.hasData && (
+        {data?.hasData === false && (
           <View style={[styles.notice, { backgroundColor: p.surfaceSunken }]}>
             <Text style={[styles.noticeText, { color: p.textSecondary }]}>
               Connected, but your Mac hasn&apos;t fetched usage yet. Open the menu bar app to refresh.
@@ -288,7 +289,7 @@ export default function Overview() {
             )}
 
             {/* Seven days of consumption, and how this week compares so far. */}
-            {weekDays.length >= 2 && (
+            {showTokens && weekDays.length >= 2 && (
               <>
                 <View style={[styles.divider, { backgroundColor: p.border }]} />
                 <View style={styles.weekHead}>
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: Space.xl, paddingBottom: Space.xxl * 2, gap: Space.lg },
 
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.sm, justifyContent: 'space-between', alignItems: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: Space.sm },
   brandDot: { width: 10, height: 10, borderRadius: 5 },
   brand: { fontSize: Type.title, fontWeight: '800', letterSpacing: -0.3 },
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
   weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   weekTitle: { fontSize: Type.micro, fontWeight: '700', letterSpacing: 1 },
 
-  spendRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: Space.xs },
+  spendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.sm, justifyContent: 'space-between', alignItems: 'baseline', paddingHorizontal: Space.xs },
   spendLabel: { fontSize: Type.body, fontWeight: '600' },
   spendValue: { fontSize: Type.body, fontWeight: '700', fontVariant: ['tabular-nums'] },
   overage: { fontSize: Type.caption, paddingHorizontal: Space.xs },

@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { GlassSurface, useGlass } from '@/components/glass';
-import { Radius, Space, Type, usePalette } from '@/lib/design';
+import { Radius, Type, usePalette } from '@/lib/design';
 
 /**
  * Range switcher.
@@ -66,11 +66,13 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', padding: 3 },
   item: {
     flex: 1,
+    minHeight: 44,
     paddingVertical: 8,
+    paddingHorizontal: 8,
     borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  text: { fontSize: Type.label, fontWeight: '600' },
+  text: { fontSize: Type.label, fontWeight: '600', textAlign: 'center' },
 });

@@ -1,5 +1,6 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
+import { liquidGlassAvailable } from '@/components/glass';
 import { usePalette } from '@/lib/design';
 import { UsageProvider } from '@/lib/usage-context';
 
@@ -24,7 +25,7 @@ export default function TabLayout() {
         tintColor={p.accent}
         // iOS 26+: the bar shrinks to a floating glass pill as you scroll down
         // and expands on the way back up. Ignored on older systems.
-        minimizeBehavior="onScrollDown">
+        minimizeBehavior={liquidGlassAvailable() ? 'onScrollDown' : undefined}>
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Icon sf="gauge.medium" md="speed" />
           <NativeTabs.Trigger.Label>Usage</NativeTabs.Trigger.Label>

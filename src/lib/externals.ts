@@ -136,7 +136,10 @@ function ensureNative(): boolean {
   if (Platform.OS !== 'ios') return false;
   if (!widget) {
     try {
+      // Native registration must remain lazy and iOS-only.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       widget = require('@/widgets/session-widget').default;
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       activityFactory = require('@/widgets/session-activity').default;
     } catch {
       return false;

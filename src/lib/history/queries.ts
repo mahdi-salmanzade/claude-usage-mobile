@@ -9,7 +9,7 @@
  */
 import type * as SQLite from 'expo-sqlite';
 
-import { QUALITY_FINE, QUALITY_UNATTRIBUTED } from './derive';
+import { QUALITY_UNATTRIBUTED } from './derive';
 import type { SampleRow, WindowRow } from './schema';
 import type { Interval } from './project';
 
@@ -413,5 +413,3 @@ export async function impliedLimit(
   const limits = rows.map((r) => (r.used / r.pct) * 100).sort((a, b) => a - b);
   return limits[Math.floor(limits.length / 2)];
 }
-
-export { QUALITY_FINE };

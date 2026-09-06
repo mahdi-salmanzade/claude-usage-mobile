@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { ApiError, fetchUsage, type Pairing, type UsageResponse } from './api';
+import { useSettings } from './settings';
 import { profileKey, purge, recordSample, withHistory } from './history';
 
 const CACHE_KEY = 'claude-usage.cache.v1';
@@ -21,6 +22,7 @@ export interface UsageState {
   refresh: () => void;
   /** Bumps whenever a new distinct snapshot lands in history, so charts requery. */
   historyRevision: number;
+  invalidateHistory: () => void;
   profile: string | null;
 }
 
@@ -46,19 +48,24 @@ export function useUsage(pairing: Pairing | null): UsageState {
   const [historyRevision, setHistoryRevision] = useState(0);
   const [profile, setProfile] = useState<string | null>(null);
 
+  const { prefs } = useSettings();
   const inflight = useRef(false);
+  const mounted = useRef(false);
+  const fetched = useRef(false);
   const hasData = useRef(false);
   const lastPurge = useRef(0);
 
   // Hydrate cached snapshot once.
   useEffect(() => {
     let active = true;
+    mounted.current = true;
     (async () => {
       const raw = await SecureStore.getItemAsync(CACHE_KEY).catch(() => null);
-      if (active && raw) {
+      if (active && raw && !fetched.current) {
         try {
           const cached = JSON.parse(raw) as { data: UsageResponse; at: number };
           setData(cached.data);
+          if (pairing) setProfile(profileKey(cached.data, pairing));
           setLastFetchedAt(cached.at);
           hasData.current = true;
           setConn((c) => (c === 'live' ? c : 'stale'));
@@ -69,8 +76,9 @@ export function useUsage(pairing: Pairing | null): UsageState {
     })();
     return () => {
       active = false;
+      mounted.current = false;
     };
-  }, []);
+  }, [pairing]);
 
   const load = useCallback(
     async (manual: boolean) => {
@@ -79,6 +87,8 @@ export function useUsage(pairing: Pairing | null): UsageState {
       if (manual) setRefreshing(true);
       try {
         const res = await fetchUsage(pairing);
+        if (!mounted.current) return;
+        fetched.current = true;
         const at = Date.now();
         setData(res);
         setLastFetchedAt(at);
@@ -94,9 +104,10 @@ export function useUsage(pairing: Pairing | null): UsageState {
         if (result?.inserted) setHistoryRevision((r) => r + 1);
         if (result && at - lastPurge.current > PURGE_EVERY_MS) {
           lastPurge.current = at;
-          void withHistory((db) => purge(db, result.profile, at));
+          void withHistory((db) => purge(db, result.profile, at, prefs.retentionDays));
         }
       } catch (e) {
+        if (!mounted.current) return;
         setErrorMessage(e instanceof ApiError ? e.message : 'Something went wrong.');
         setConn(hasData.current ? 'stale' : 'error');
       } finally {
@@ -104,18 +115,20 @@ export function useUsage(pairing: Pairing | null): UsageState {
         setRefreshing(false);
       }
     },
-    [pairing],
+    [pairing, prefs.retentionDays],
   );
 
   // Initial load + poll + foreground refresh.
   useEffect(() => {
     if (!pairing) return;
-    load(false);
+    // Start asynchronously; load also updates the refresh state for user actions.
+    const initial = setTimeout(() => void load(false), 0);
     const id = setInterval(() => load(false), POLL_MS);
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') load(false);
     });
     return () => {
+      clearTimeout(initial);
       clearInterval(id);
       sub.remove();
     };
@@ -129,6 +142,7 @@ export function useUsage(pairing: Pairing | null): UsageState {
     refreshing,
     refresh: () => load(true),
     historyRevision,
+    invalidateHistory: () => setHistoryRevision((r) => r + 1),
     profile,
   };
 }

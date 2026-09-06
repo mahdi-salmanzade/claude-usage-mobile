@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Radius, Space, Type, type Palette } from '@/lib/design';
+import { Space, Type, type Palette } from '@/lib/design';
 
 interface Props {
   label: string;
@@ -17,7 +17,7 @@ export function UsageBar({ label, percent, palette, color, detail, subDetail, sl
   const height = slim ? 6 : 9;
 
   return (
-    <View style={{ marginBottom: slim ? Space.md : Space.lg }}>
+    <View>
       <View style={styles.headerRow}>
         <Text
           style={[
@@ -54,6 +54,6 @@ const styles = StyleSheet.create({
   percent: { fontWeight: '700', fontVariant: ['tabular-nums'] },
   track: { overflow: 'hidden' },
   fill: { height: '100%' },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Space.sm - 2 },
+  footerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Space.xs, justifyContent: 'space-between', marginTop: Space.sm - 2 },
   detail: { fontSize: Type.caption },
 });

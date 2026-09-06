@@ -22,9 +22,10 @@ import { ensureNotificationPermission } from '@/lib/notifications';
 import { usePairing } from '@/lib/pairing';
 import { RETENTION_OPTIONS, useSettings } from '@/lib/settings';
 
-const RETENTION_LABELS = RETENTION_OPTIONS.map((d) => `${d}d`) as unknown as readonly `${number}d`[];
 import { backgroundStatus } from '@/lib/tasks';
 import { useUsageState } from '@/lib/usage-context';
+
+const RETENTION_LABELS = RETENTION_OPTIONS.map((d) => `${d}d`) as unknown as readonly `${number}d`[];
 
 interface Diagnostics {
   bytes: number;
@@ -40,7 +41,7 @@ export default function Settings() {
   const p = usePalette();
   const { pairing, clear } = usePairing();
   const { prefs, update } = useSettings();
-  const { data, historyRevision, profile } = useUsageState();
+  const { data, historyRevision, profile, invalidateHistory } = useUsageState();
   const now = useNow(30_000);
 
   const [diag, setDiag] = useState<Diagnostics | null>(null);
@@ -75,7 +76,8 @@ export default function Settings() {
   }, [profile, now]);
 
   useEffect(() => {
-    void loadDiagnostics();
+    const timer = setTimeout(() => void loadDiagnostics(), 0);
+    return () => clearTimeout(timer);
   }, [loadDiagnostics, historyRevision]);
 
   const toggleNotifications = async (next: boolean) => {
@@ -99,6 +101,7 @@ export default function Settings() {
     if (!profile) return;
     const db = await getHistoryDb();
     await purge(db, profile, Date.now(), days);
+    invalidateHistory();
     await loadDiagnostics();
   };
 
@@ -114,6 +117,7 @@ export default function Settings() {
           onPress: async () => {
             const db = await getHistoryDb();
             await clearHistory(db);
+            invalidateHistory();
             await loadDiagnostics();
           },
         },
@@ -226,7 +230,7 @@ export default function Settings() {
             />
           </View>
           <Divider />
-          <Pressable onPress={confirmClear} style={styles.actionRow}>
+          <Pressable onPress={confirmClear} accessibilityRole="button" style={styles.actionRow}>
             <Text style={[styles.rowTitle, { color: p.critical }]}>Clear history</Text>
             <Text style={[styles.rowValue, { color: p.textFaint }]}>
               {diag ? formatBytes(diag.bytes) : ''}
@@ -276,7 +280,7 @@ export default function Settings() {
 
         <SectionLabel>PAIRING</SectionLabel>
         <SectionCard>
-          <Pressable onPress={confirmUnpair} style={styles.actionRow}>
+          <Pressable onPress={confirmUnpair} accessibilityRole="button" style={styles.actionRow}>
             <Text style={[styles.rowTitle, { color: p.critical }]}>Unpair this Mac</Text>
           </Pressable>
         </SectionCard>
@@ -311,6 +315,8 @@ function Row({
         <Text style={[styles.rowSub, { color: p.textSecondary }]}>{subtitle}</Text>
       </View>
       <Switch
+        accessibilityLabel={title}
+        accessibilityHint={subtitle}
         value={value}
         onValueChange={onValueChange}
         disabled={disabled}
@@ -325,7 +331,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.infoRow}>
       <Text style={[styles.infoLabel, { color: p.textSecondary }]}>{label}</Text>
-      <Text style={[styles.rowValue, { color: p.text }]} numberOfLines={1}>
+      <Text style={[styles.rowValue, styles.infoValue, { color: p.text }]}>
         {value}
       </Text>
     </View>
@@ -346,13 +352,14 @@ const styles = StyleSheet.create({
   rowSub: { fontSize: Type.caption, marginTop: 2, lineHeight: 17 },
   rowValue: { fontSize: Type.label, fontWeight: '600', fontVariant: ['tabular-nums'] },
   note: { fontSize: Type.micro, lineHeight: 16 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  infoValue: { flexShrink: 1, textAlign: 'right', maxWidth: '60%' },
+  actionRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   infoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Space.lg },
   infoLabel: { fontSize: Type.label, flexShrink: 1 },
-  stepperRow: { flexDirection: 'row', alignItems: 'center' },
-  stepper: { flexDirection: 'row', alignItems: 'center' },
+  stepperRow: { gap: Space.md },
+  stepper: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center' },
   stack: { gap: Space.md },
-  stepBtn: { paddingHorizontal: Space.md, paddingVertical: Space.sm },
+  stepBtn: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Space.md, paddingVertical: Space.sm },
   stepSign: { fontSize: 20, fontWeight: '700' },
   stepValue: { fontSize: Type.body, fontWeight: '700', minWidth: 42, textAlign: 'center', fontVariant: ['tabular-nums'] },
   footnote: { fontSize: Type.caption, lineHeight: 18, marginTop: Space.xl },

@@ -10,11 +10,11 @@ import { defineChart } from '@tanstack/charts/scene';
 import { text } from '@tanstack/charts/text';
 import type { ChartPoint } from '@tanstack/charts/types';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 
-import { useChartScrub, useScrubKey } from '@/hooks/use-chart-scrub';
+import { useChartScrub } from '@/hooks/use-chart-scrub';
 import { Radius, Type, usePalette, withAlpha } from '@/lib/design';
 import { formatTokens } from '@/lib/format';
 
@@ -62,7 +62,7 @@ export function DailyTokensChart({ points, pace, onScrub }: DailyTokensChartProp
   // Stable across definition rebuilds: <Chart> re-binds its cursor session
   // whenever the controller identity changes, which would drop a live scrub.
   const cursor = useMemo(() => createChartCursor<string, number>(), []);
-  const scrubbedKey = useScrubKey();
+  const scrubbedKey = useRef<string | null>(null);
 
   const maxTokens = useMemo(
     () => Math.max(1, ...points.map((d) => d.tokens), pace ?? 0),

@@ -27,6 +27,7 @@ export function PrimaryButton({
 }) {
   const p = usePalette();
   const glass = useGlass();
+  const labelColor = p.scheme === 'dark' ? p.bg : '#FFFDFA';
 
   return (
     <GlassButton
@@ -41,9 +42,9 @@ export function PrimaryButton({
       style={[styles.button, (disabled || loading) && styles.disabled, style]}>
       <View style={styles.content}>
         {loading ? (
-          <ActivityIndicator color="#FFFDFA" />
+          <ActivityIndicator color={labelColor} />
         ) : (
-          <Text style={styles.label}>{title}</Text>
+          <Text style={[styles.label, { color: labelColor }]}>{title}</Text>
         )}
       </View>
     </GlassButton>
